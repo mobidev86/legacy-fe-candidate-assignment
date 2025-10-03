@@ -3,34 +3,11 @@ import { useState, useEffect } from 'react';
 import { useSafeDynamicContext } from '../context/DynamicContext';
 import MessageForm from '../components/MessageForm';
 import MessageHistory from '../components/MessageHistory';
-import { SignedMessage } from '../types/message';
 
 const MessageSignerPage = () => {
   // Use our safe context hook that works with both real and mock contexts
   const dynamicContext = useSafeDynamicContext() as any;
-  const { user, showAuthFlow } = dynamicContext || {};
-  const [messageHistory, setMessageHistory] = useState<SignedMessage[]>([]);
-  
-  // Load message history from localStorage on component mount
-  useEffect(() => {
-    const savedHistory = localStorage.getItem('messageHistory');
-    if (savedHistory) {
-      try {
-        setMessageHistory(JSON.parse(savedHistory));
-      } catch (error) {
-        console.error('Failed to parse message history:', error);
-      }
-    }
-  }, []);
-  
-  // Save message history to localStorage whenever it changes
-  useEffect(() => {
-    localStorage.setItem('messageHistory', JSON.stringify(messageHistory));
-  }, [messageHistory]);
-  
-  const addToHistory = (newMessage: SignedMessage) => {
-    setMessageHistory(prev => [newMessage, ...prev]);
-  };
+  const { user, showAuthFlow, messageHistory = [] } = dynamicContext || {};
   
   const [authLoading, setAuthLoading] = useState(true);
   
@@ -79,7 +56,7 @@ const MessageSignerPage = () => {
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div>
-          <MessageForm addToHistory={addToHistory} />
+          <MessageForm />
         </div>
         
         <div>

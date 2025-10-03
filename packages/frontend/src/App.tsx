@@ -1,5 +1,4 @@
 import { DynamicContextProvider } from '@dynamic-labs/sdk-react-core';
-import { EthereumWalletConnectors } from '@dynamic-labs/ethereum';
 import { MockDynamicProvider } from './context/DynamicContext';
 import { Routes, Route } from 'react-router-dom';
 import { useState, useEffect } from 'react';
@@ -79,19 +78,7 @@ function App() {
       return (
         <DynamicContextProvider
           settings={{
-            // Use a hardcoded string literal to completely avoid toString() issues
-            environmentId: "04bf994f-d77d-4356-aeab-f6f0c2a1e2c1",
-            walletConnectors: [EthereumWalletConnectors],
-            evmNetworks: [
-              {
-                chainId: 1, // Ethereum Mainnet
-                name: "Ethereum",
-                displayName: "Ethereum",
-              },
-            ],
-            // Additional settings to improve stability
-            displayTermsOfService: false,
-            storageKey: "web3-message-signer-auth"
+            environmentId: "04bf994f-d77d-4356-aeab-f6f0c2a1e2c1"
           }}
         >
           {children}

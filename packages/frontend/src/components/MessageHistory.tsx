@@ -1,7 +1,7 @@
-import { SignedMessage } from '../types/message';
+import { SignedMessageType } from '../context/DynamicContext';
 
 interface MessageHistoryProps {
-  messages: SignedMessage[];
+  messages: SignedMessageType[];
 }
 
 const MessageHistory = ({ messages = [] }: MessageHistoryProps) => {

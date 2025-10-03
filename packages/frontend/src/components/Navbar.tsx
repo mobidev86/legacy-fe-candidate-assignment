@@ -34,6 +34,12 @@ const Navbar = () => {
   // Get wallet address safely with multiple fallbacks
   const getWalletAddress = () => {
     try {
+      // First try to get address from primaryWallet
+      if (dynamicContext?.primaryWallet?.address) {
+        return '' + dynamicContext.primaryWallet.address;
+      }
+      
+      // Fallback to user.walletPublicKey
       if (!user) return '';
       if (typeof user !== 'object') return '';
       
@@ -75,9 +81,16 @@ const Navbar = () => {
               <div className="w-32 h-8 bg-gray-200 animate-pulse rounded"></div>
             ) : user ? (
               <div className="flex items-center space-x-4">
-                <span className="text-sm text-gray-600">
-                  {shortenAddress(walletAddress)}
-                </span>
+                <div className="flex flex-col items-end">
+                  <span className="text-sm font-medium text-gray-800">
+                    {shortenAddress(walletAddress)}
+                  </span>
+                  {user?.email && (
+                    <span className="text-xs text-gray-500">
+                      {user.email}
+                    </span>
+                  )}
+                </div>
                 <button
                   onClick={() => {
                     try {

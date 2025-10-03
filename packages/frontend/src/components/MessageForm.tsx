@@ -1,17 +1,17 @@
 import { useState, useEffect } from 'react';
 // Import our safe context hook instead of the direct Dynamic.xyz hook
-import { useSafeDynamicContext } from '../context/DynamicContext';
+import { useSafeDynamicContext, SignedMessageType } from '../context/DynamicContext';
 import { verifySignature } from '../services/api';
-import { SignedMessage, VerificationResponse } from '../types/message';
+import { VerificationResponse } from '../types/message';
 
 interface MessageFormProps {
-  addToHistory: (message: SignedMessage) => void;
+  addToHistory?: (message: SignedMessageType) => void;
 }
 
 const MessageForm = ({ addToHistory }: MessageFormProps) => {
   // Use our safe context hook that works with both real and mock contexts
   const dynamicContext = useSafeDynamicContext() as any;
-  const { user, primaryWallet } = dynamicContext || {};
+  const { user, primaryWallet, addMessageToHistory } = dynamicContext || {};
   const [message, setMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
@@ -26,6 +26,15 @@ const MessageForm = ({ addToHistory }: MessageFormProps) => {
   }, []);
   const [error, setError] = useState<string | null>(null);
   const [verificationResult, setVerificationResult] = useState<VerificationResponse | null>(null);
+  
+  // Use the context's addMessageToHistory if available, otherwise use the prop
+  const handleAddToHistory = (message: SignedMessageType) => {
+    if (addMessageToHistory && typeof addMessageToHistory === 'function') {
+      addMessageToHistory(message);
+    } else if (addToHistory && typeof addToHistory === 'function') {
+      addToHistory(message);
+    }
+  };
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,7 +80,7 @@ const MessageForm = ({ addToHistory }: MessageFormProps) => {
       }
       
       // Create a new signed message object
-      const newSignedMessage: SignedMessage = {
+      const newSignedMessage: SignedMessageType = {
         id: Date.now().toString(),
         message,
         signature,
@@ -97,7 +106,7 @@ const MessageForm = ({ addToHistory }: MessageFormProps) => {
         newSignedMessage.signer = signer;
         
         // Add to history
-        addToHistory(newSignedMessage);
+        handleAddToHistory(newSignedMessage);
         
         // Show verification result
         setVerificationResult({
@@ -121,7 +130,7 @@ const MessageForm = ({ addToHistory }: MessageFormProps) => {
         newSignedMessage.signer = '';
         
         // Add to history anyway
-        addToHistory(newSignedMessage);
+        handleAddToHistory(newSignedMessage);
         
         // Show error result
         setVerificationResult(fallbackResult as VerificationResponse);
@@ -175,15 +184,21 @@ const MessageForm = ({ addToHistory }: MessageFormProps) => {
             {(() => {
               // Safely extract wallet address with multiple fallbacks
               try {
-                if (!user) return 'Not connected';
-                if (typeof user !== 'object') return 'Invalid user data';
+                if (!primaryWallet) return 'Not connected';
+                if (typeof primaryWallet !== 'object') return 'Invalid wallet data';
                 
-                // Try to access walletPublicKey safely
-                const walletKey = user.walletPublicKey;
-                if (walletKey === null || walletKey === undefined) return 'No wallet address';
+                // Try to access address safely
+                const address = primaryWallet.address;
+                if (address === null || address === undefined) {
+                  // Fallback to user.walletPublicKey if available
+                  if (user && user.walletPublicKey) {
+                    return '' + user.walletPublicKey;
+                  }
+                  return 'No wallet address';
+                }
                 
                 // Return as plain string, avoiding toString()
-                return '' + walletKey;
+                return '' + address;
               } catch (error) {
                 console.error('Error displaying wallet address:', error);
                 return 'Error displaying address';
