@@ -10,6 +10,12 @@ interface NavbarProps {
 }
 
 const Navbar = ({ user, handleLogOut, showAuthFlow }: NavbarProps = {}) => {
+  // Log props for debugging
+  console.log('Navbar props:', { 
+    user: !!user, 
+    handleLogOut: typeof handleLogOut, 
+    showAuthFlow: typeof showAuthFlow 
+  });
   
   const [isLoading, setIsLoading] = useState(true);
   
@@ -111,15 +117,19 @@ const Navbar = ({ user, handleLogOut, showAuthFlow }: NavbarProps = {}) => {
               <button
                 onClick={() => {
                   try {
+                    console.log('Navbar: showAuthFlow clicked, type:', typeof showAuthFlow);
+                    console.log('Navbar: showAuthFlow value:', showAuthFlow);
+                    
                     if (typeof showAuthFlow === 'function') {
+                      console.log('Navbar: Calling showAuthFlow function');
                       showAuthFlow();
                     } else {
-                      console.error('showAuthFlow is not a function');
-                      // Fallback: reload the page as a last resort
-                      window.location.reload();
+                      console.error('Navbar: showAuthFlow is not a function');
+                      alert('Authentication is currently unavailable. Please try again later.');
                     }
                   } catch (error) {
-                    console.error('Error showing auth flow:', error);
+                    console.error('Navbar: Error showing auth flow:', error);
+                    alert('An error occurred while trying to connect. Please try again.');
                   }
                 }}
                 className="btn btn-primary"

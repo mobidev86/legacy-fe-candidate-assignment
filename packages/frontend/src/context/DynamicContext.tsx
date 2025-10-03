@@ -149,7 +149,7 @@ export const useSafeDynamicContext = () => {
       
       // If we get here without error, return an enhanced version of the real context
       // that includes our additional functionality
-      return {
+      const enhancedContext = {
         ...context,
         messageHistory: (() => {
           // Load message history from localStorage
@@ -180,6 +180,18 @@ export const useSafeDynamicContext = () => {
           }
         }
       };
+      
+      // Ensure showAuthFlow is always a function
+      if (typeof enhancedContext.showAuthFlow !== 'function') {
+        console.warn('showAuthFlow is not a function in the real context, providing a fallback');
+        // Use type assertion to avoid TypeScript errors
+        (enhancedContext as any).showAuthFlow = () => {
+          console.log('Fallback showAuthFlow called');
+          alert('Authentication flow is not available. Please try again later.');
+        };
+      }
+      
+      return enhancedContext;
     } catch (error) {
       // If using the real hook fails, fall back to our mock
       console.warn('Falling back to mock Dynamic context:', error);
