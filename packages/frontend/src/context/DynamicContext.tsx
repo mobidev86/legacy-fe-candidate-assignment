@@ -143,7 +143,9 @@ export const useSafeDynamicContext = () => {
   try {
     // Try to use the real Dynamic context
     try {
+      console.log('Attempting to use real Dynamic.xyz context...');
       const context = useRealDynamicContext();
+      console.log('Real Dynamic.xyz context successfully obtained:', context);
       
       // If we get here without error, return an enhanced version of the real context
       // that includes our additional functionality
@@ -180,12 +182,12 @@ export const useSafeDynamicContext = () => {
       };
     } catch (error) {
       // If using the real hook fails, fall back to our mock
-      console.warn('Falling back to mock Dynamic context');
+      console.warn('Falling back to mock Dynamic context:', error);
       return useMockDynamicContext();
     }
   } catch (error) {
     // If importing the real hook fails, fall back to our mock
-    console.warn('Dynamic SDK not available, using mock context');
+    console.warn('Dynamic SDK not available, using mock context:', error);
     return useMockDynamicContext();
   }
 };

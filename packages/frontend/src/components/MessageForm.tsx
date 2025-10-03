@@ -1,17 +1,16 @@
 import { useState, useEffect } from 'react';
-// Import our safe context hook instead of the direct Dynamic.xyz hook
-import { useSafeDynamicContext, SignedMessageType } from '../context/DynamicContext';
+import { SignedMessageType } from '../context/DynamicContext';
 import { verifySignature } from '../services/api';
 import { VerificationResponse } from '../types/message';
 
 interface MessageFormProps {
   addToHistory?: (message: SignedMessageType) => void;
+  user?: any;
+  primaryWallet?: any;
+  addMessageToHistory?: (message: SignedMessageType) => void;
 }
 
-const MessageForm = ({ addToHistory }: MessageFormProps) => {
-  // Use our safe context hook that works with both real and mock contexts
-  const dynamicContext = useSafeDynamicContext() as any;
-  const { user, primaryWallet, addMessageToHistory } = dynamicContext || {};
+const MessageForm = ({ addToHistory, user, primaryWallet, addMessageToHistory }: MessageFormProps = {}) => {
   const [message, setMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);

@@ -6,42 +6,55 @@ import Layout from './components/Layout';
 import HomePage from './pages/HomePage';
 import MessageSignerPage from './pages/MessageSignerPage';
 import ErrorBoundary from './components/ErrorBoundary';
+import { EthereumWalletConnectors } from "@dynamic-labs/ethereum";
 
-// Create a fallback context that uses our mock provider
-const FallbackContext = ({ children }: { children: React.ReactNode }) => {
-  return (
-    <MockDynamicProvider>
-      {children}
-    </MockDynamicProvider>
-  );
-};
+// No need for a separate FallbackContext component anymore
 
 function App() {
-  const [isLoading, setIsLoading] = useState(true);
-  const [initError, setInitError] = useState<string | null>(null);
-  const [useFallback, setUseFallback] = useState(false);
+  // Create a single source of truth for the app state
+  const [appState, setAppState] = useState({
+    isLoading: true,
+    initError: null as string | null,
+    useFallback: false,
+    sdkReady: false
+  });
   
   // Add a small delay to ensure proper initialization
   useEffect(() => {
     const timer = setTimeout(() => {
       try {
-        // Check if window.dynamic is defined (this is added by the Dynamic.xyz SDK)
-        if (typeof window !== 'undefined' && !(window as any).dynamic) {
-          console.warn('Dynamic.xyz SDK not detected, using fallback mode');
-          setUseFallback(true);
+        // Add more detailed logging
+        console.log('Checking Dynamic.xyz SDK initialization...');
+        console.log('EthereumWalletConnectors available:', !!EthereumWalletConnectors);
+        console.log('DynamicContextProvider available:', !!DynamicContextProvider);
+        
+        // Instead of checking for window.dynamic, check if we have the required components
+        // and assume we can use the real SDK
+        if (!!DynamicContextProvider && !!EthereumWalletConnectors) {
+          console.log('Dynamic.xyz SDK components available, using real mode');
+          setAppState(prev => ({ ...prev, isLoading: false, sdkReady: true }));
+        } else {
+          console.warn('Dynamic.xyz SDK components not fully available, using fallback mode');
+          setAppState(prev => ({ ...prev, isLoading: false, useFallback: true }));
         }
-        setIsLoading(false);
       } catch (error) {
         console.error('Error during initialization:', error);
-        setInitError(error instanceof Error ? error.message : 'Failed to initialize application');
-        setUseFallback(true);
-        setIsLoading(false);
+        setAppState(prev => ({
+          ...prev,
+          isLoading: false,
+          useFallback: true,
+          initError: error instanceof Error ? error.message : 'Failed to initialize application'
+        }));
       }
     }, 1000);
     
     return () => clearTimeout(timer);
   }, []);
   
+  // Extract state variables for readability
+  const { isLoading, initError, useFallback } = appState;
+  
+  // Show loading screen while initializing
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -50,6 +63,7 @@ function App() {
     );
   }
   
+  // Show error screen if initialization failed
   if (initError) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -68,57 +82,78 @@ function App() {
     );
   }
   
-  // Create a wrapper component to handle potential Dynamic.xyz initialization errors
-  const DynamicWrapper = ({ children }: { children: React.ReactNode }) => {
+  // Determine which provider to use
+  const AppContent = () => {
+    // If we need to use the fallback mode
     if (useFallback) {
-      return <FallbackContext>{children}</FallbackContext>;
+      console.log('Rendering with MockDynamicProvider');
+      return (
+        <MockDynamicProvider>
+          <AppRoutes showFallbackNotice={true} />
+        </MockDynamicProvider>
+      );
     }
     
+    // If SDK is ready, use the real provider
     try {
+      console.log('Attempting to render with DynamicContextProvider');
       return (
         <DynamicContextProvider
           settings={{
-            environmentId: "04bf994f-d77d-4356-aeab-f6f0c2a1e2c1"
+            environmentId: "04bf994f-d77d-4356-aeab-f6f0c2a1e2c1",
+            walletConnectors: [EthereumWalletConnectors]
           }}
         >
-          {children}
+          <AppRoutes showFallbackNotice={false} />
         </DynamicContextProvider>
       );
     } catch (error) {
       console.error('Error rendering DynamicContextProvider:', error);
-      return <FallbackContext>{children}</FallbackContext>;
+      // If there's an error with the real provider, fall back to the mock
+      return (
+        <MockDynamicProvider>
+          <AppRoutes showFallbackNotice={true} />
+        </MockDynamicProvider>
+      );
     }
   };
   
-  return (
-    <ErrorBoundary>
-      <DynamicWrapper>
-        <div className={useFallback ? "bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4" : "hidden"}>
+  // Separate component for routes to ensure they're rendered within the correct provider
+  const AppRoutes = ({ showFallbackNotice }: { showFallbackNotice: boolean }) => (
+    <>
+      {showFallbackNotice && (
+        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
           <p className="text-yellow-700">
             <strong>Notice:</strong> Running in fallback mode with mock wallet functionality.
-            {useFallback && <button 
+            <button 
               onClick={() => window.location.reload()} 
               className="ml-4 px-2 py-1 bg-yellow-200 rounded hover:bg-yellow-300 text-sm"
             >
               Try Again
-            </button>}
+            </button>
           </p>
         </div>
-        <Routes>
-          <Route path="/" element={<Layout />}>
-            <Route index element={
-              <ErrorBoundary>
-                <HomePage />
-              </ErrorBoundary>
-            } />
-            <Route path="/sign-message" element={
-              <ErrorBoundary>
-                <MessageSignerPage />
-              </ErrorBoundary>
-            } />
-          </Route>
-        </Routes>
-      </DynamicWrapper>
+      )}
+      <Routes>
+        <Route path="/" element={<Layout />}>
+          <Route index element={
+            <ErrorBoundary>
+              <HomePage />
+            </ErrorBoundary>
+          } />
+          <Route path="/sign-message" element={
+            <ErrorBoundary>
+              <MessageSignerPage />
+            </ErrorBoundary>
+          } />
+        </Route>
+      </Routes>
+    </>
+  );
+  
+  return (
+    <ErrorBoundary>
+      <AppContent />
     </ErrorBoundary>
   );
 }

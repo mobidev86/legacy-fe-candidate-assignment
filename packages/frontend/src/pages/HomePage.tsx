@@ -1,15 +1,16 @@
-// Import our safe context hook instead of the direct Dynamic.xyz hook
-import { useSafeDynamicContext } from '../context/DynamicContext';
 import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
+import { useSafeDynamicContext } from '../context/DynamicContext';
 
 const HomePage = () => {
-  // Use our safe context hook that works with both real and mock contexts
-  const dynamicContext = useSafeDynamicContext() as any;
-  const { user, showAuthFlow } = dynamicContext || {};
+  // Get the context directly - now it's safe because we're inside a provider
+  const contextData = useSafeDynamicContext();
+  const user = contextData?.user;
+  const showAuthFlow = contextData?.showAuthFlow;
+  
   const [isLoading, setIsLoading] = useState(true);
   
-  // Add a small delay to ensure the user state is properly loaded
+  // Simple loading state for UI elements
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsLoading(false);
@@ -17,6 +18,8 @@ const HomePage = () => {
     
     return () => clearTimeout(timer);
   }, []);
+  
+  // No need for error handling here anymore
 
   return (
     <div className="max-w-3xl mx-auto text-center">
@@ -64,7 +67,11 @@ const HomePage = () => {
         <button 
           onClick={() => {
             try {
-              showAuthFlow();
+              if (typeof showAuthFlow === 'function') {
+                showAuthFlow();
+              } else {
+                console.error('showAuthFlow is not a function');
+              }
             } catch (error) {
               console.error('Error showing auth flow:', error);
             }

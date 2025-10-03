@@ -1,22 +1,23 @@
 import { Link } from 'react-router-dom';
-// Import our safe context hook instead of the direct Dynamic.xyz hook
-import { useSafeDynamicContext } from '../context/DynamicContext';
 import { useState, useEffect } from 'react';
 
-const Navbar = () => {
-  // Use our safe context hook that works with both real and mock contexts
-  const dynamicContext = useSafeDynamicContext() as any;
-  // Use optional chaining to avoid errors if dynamicContext is undefined
-  const user = dynamicContext?.user;
-  const handleLogOut = dynamicContext?.handleLogOut;
-  const showAuthFlow = dynamicContext?.showAuthFlow;
+// Define props interface
+interface NavbarProps {
+  user?: any;
+  handleLogOut?: () => void;
+  showAuthFlow?: () => void;
+  isAuthenticated?: boolean;
+}
+
+const Navbar = ({ user, handleLogOut, showAuthFlow }: NavbarProps = {}) => {
+  
   const [isLoading, setIsLoading] = useState(true);
   
   // Add a small delay to ensure the user state is properly loaded
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsLoading(false);
-    }, 300);
+    }, 500);
     
     return () => clearTimeout(timer);
   }, []);
@@ -34,14 +35,14 @@ const Navbar = () => {
   // Get wallet address safely with multiple fallbacks
   const getWalletAddress = () => {
     try {
-      // First try to get address from primaryWallet
-      if (dynamicContext?.primaryWallet?.address) {
-        return '' + dynamicContext.primaryWallet.address;
-      }
-      
-      // Fallback to user.walletPublicKey
+      // Only use user prop since we're not using the context directly anymore
       if (!user) return '';
       if (typeof user !== 'object') return '';
+      
+      // Try to access address from user.primaryWallet
+      if (user.primaryWallet?.address) {
+        return '' + user.primaryWallet.address;
+      }
       
       // Try to access walletPublicKey safely
       const walletKey = (user as any).walletPublicKey;
@@ -54,8 +55,6 @@ const Navbar = () => {
       return '';
     }
   };
-  
-  const walletAddress = getWalletAddress();
 
   return (
     <nav className="bg-white shadow-md">
@@ -83,7 +82,7 @@ const Navbar = () => {
               <div className="flex items-center space-x-4">
                 <div className="flex flex-col items-end">
                   <span className="text-sm font-medium text-gray-800">
-                    {shortenAddress(walletAddress)}
+                    {shortenAddress(getWalletAddress())}
                   </span>
                   {user?.email && (
                     <span className="text-xs text-gray-500">
