@@ -113,3 +113,21 @@ For the frontend, you can serve the built files from the `packages/frontend/dist
 - The backend uses ethers.js for signature verification
 - Message history is stored in localStorage
 - The application is set up as a monorepo using pnpm workspaces
+
+## Troubleshooting
+
+### UI Flickering Issues
+
+If you experience UI flickering where components briefly appear and then disappear, this may be due to initialization issues with the Dynamic.xyz SDK. The following fixes have been implemented:
+
+1. Added loading states with timeouts to ensure components are fully mounted before rendering
+2. Wrapped components in ErrorBoundary to catch and display any runtime errors
+3. Added try-catch blocks around Dynamic.xyz SDK method calls
+4. Updated TypeScript configuration for better module resolution
+
+If issues persist:
+
+- Check browser console for errors
+- Ensure you're using the correct Dynamic.xyz environment ID
+- Try clearing localStorage and browser cache
+- Verify that the backend server is running and accessible

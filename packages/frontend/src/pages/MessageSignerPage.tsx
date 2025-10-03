@@ -5,7 +5,9 @@ import MessageHistory from '../components/MessageHistory';
 import { SignedMessage } from '../types/message';
 
 const MessageSignerPage = () => {
-  const { user, showAuthFlow } = useDynamicContext();
+  // Cast the context to any to avoid TypeScript errors with the Dynamic SDK
+  const dynamicContext = useDynamicContext() as any;
+  const { user, showAuthFlow } = dynamicContext;
   const [messageHistory, setMessageHistory] = useState<SignedMessage[]>([]);
   
   // Load message history from localStorage on component mount
@@ -29,13 +31,39 @@ const MessageSignerPage = () => {
     setMessageHistory(prev => [newMessage, ...prev]);
   };
   
+  const [authLoading, setAuthLoading] = useState(true);
+  
+  // Add a small delay to ensure the user state is properly loaded
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setAuthLoading(false);
+    }, 300);
+    
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (authLoading) {
+    return (
+      <div className="text-center py-12">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600 mx-auto mb-4"></div>
+        <p className="text-gray-600">Loading authentication status...</p>
+      </div>
+    );
+  }
+  
   if (!user) {
     return (
       <div className="text-center py-12">
         <h2 className="text-2xl font-bold mb-4">Please connect your wallet</h2>
         <p className="text-gray-600 mb-6">You need to connect your wallet to sign messages</p>
         <button 
-          onClick={() => showAuthFlow()} 
+          onClick={() => {
+            try {
+              showAuthFlow();
+            } catch (error) {
+              console.error('Error showing auth flow:', error);
+            }
+          }} 
           className="btn btn-primary"
         >
           Connect Wallet

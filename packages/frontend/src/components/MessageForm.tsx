@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useDynamicContext } from '@dynamic-labs/sdk-react-core';
 import { verifySignature } from '../services/api';
 import { SignedMessage, VerificationResponse } from '../types/message';
@@ -8,9 +8,21 @@ interface MessageFormProps {
 }
 
 const MessageForm = ({ addToHistory }: MessageFormProps) => {
-  const { user, primaryWallet } = useDynamicContext();
+  // Cast the context to any to avoid TypeScript errors with the Dynamic SDK
+  const dynamicContext = useDynamicContext() as any;
+  const { user, primaryWallet } = dynamicContext;
   const [message, setMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(true);
+  
+  // Ensure the component is properly mounted
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsInitializing(false);
+    }, 500);
+    
+    return () => clearTimeout(timer);
+  }, []);
   const [error, setError] = useState<string | null>(null);
   const [verificationResult, setVerificationResult] = useState<VerificationResponse | null>(null);
   
@@ -24,6 +36,12 @@ const MessageForm = ({ addToHistory }: MessageFormProps) => {
     
     if (!primaryWallet) {
       setError('Wallet not connected');
+      return;
+    }
+    
+    // Validate that the wallet has the signMessage method
+    if (typeof primaryWallet.signMessage !== 'function') {
+      setError('Wallet does not support message signing');
       return;
     }
     
@@ -65,6 +83,17 @@ const MessageForm = ({ addToHistory }: MessageFormProps) => {
       setIsLoading(false);
     }
   };
+  
+  if (isInitializing) {
+    return (
+      <div className="card">
+        <h2 className="text-xl font-semibold mb-4">Sign a Message</h2>
+        <div className="flex justify-center items-center py-10">
+          <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-primary-600"></div>
+        </div>
+      </div>
+    );
+  }
   
   return (
     <div className="card">

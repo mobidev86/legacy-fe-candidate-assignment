@@ -49,6 +49,36 @@ setup() {
   fi
 }
 
+# Fix TypeScript issues
+fix_typescript_issues() {
+  print_header "Checking for TypeScript issues"
+  
+  # Check if there are any TypeScript errors in the frontend
+  cd packages/frontend
+  echo -e "${YELLOW}Checking for TypeScript errors...${NC}"
+  if ! pnpm tsc --noEmit; then
+    echo -e "${YELLOW}TypeScript errors found. Attempting to fix...${NC}"
+    
+    # Create a vite-env.d.ts file if it doesn't exist
+    if [ ! -f "src/vite-env.d.ts" ]; then
+      echo -e "/// <reference types=\"vite/client\" />" > src/vite-env.d.ts
+      echo -e "${GREEN}Created vite-env.d.ts file${NC}"
+    fi
+    
+    echo -e "${YELLOW}Please fix any remaining TypeScript errors manually.${NC}"
+    read -p "Continue anyway? (y/n): " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+      echo "Setup aborted. Please fix TypeScript errors and run this script again."
+      exit 1
+    fi
+  else
+    echo -e "${GREEN}No TypeScript errors found.${NC}"
+  fi
+  
+  cd ../..
+}
+
 # Run the project
 run_project() {
   print_header "Starting the project"
@@ -63,4 +93,5 @@ run_project() {
 
 # Main execution
 setup
+fix_typescript_issues
 run_project

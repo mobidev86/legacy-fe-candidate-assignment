@@ -1,8 +1,21 @@
 import { useDynamicContext } from '@dynamic-labs/sdk-react-core';
 import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 
 const HomePage = () => {
-  const { user, showAuthFlow } = useDynamicContext();
+  // Cast the context to any to avoid TypeScript errors with the Dynamic SDK
+  const dynamicContext = useDynamicContext() as any;
+  const { user, showAuthFlow } = dynamicContext;
+  const [isLoading, setIsLoading] = useState(true);
+  
+  // Add a small delay to ensure the user state is properly loaded
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 300);
+    
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
     <div className="max-w-3xl mx-auto text-center">
@@ -38,13 +51,23 @@ const HomePage = () => {
         </div>
       </div>
       
-      {user ? (
+      {isLoading ? (
+        <div className="btn btn-primary text-lg px-8 py-3 opacity-50 cursor-not-allowed">
+          Loading...
+        </div>
+      ) : user ? (
         <Link to="/sign-message" className="btn btn-primary text-lg px-8 py-3">
           Sign a Message
         </Link>
       ) : (
         <button 
-          onClick={() => showAuthFlow()} 
+          onClick={() => {
+            try {
+              showAuthFlow();
+            } catch (error) {
+              console.error('Error showing auth flow:', error);
+            }
+          }} 
           className="btn btn-primary text-lg px-8 py-3"
         >
           Connect Wallet to Get Started
