@@ -67,18 +67,13 @@ const HomePage = () => {
         <button 
           onClick={() => {
             try {
-              console.log('showAuthFlow type:', typeof showAuthFlow);
-              console.log('showAuthFlow value:', showAuthFlow);
-              
               if (typeof showAuthFlow === 'function') {
                 showAuthFlow();
               } else {
-                console.error('showAuthFlow is not a function');
-                alert('Authentication is currently unavailable. Please try again later.');
+                alert('Authentication is currently unavailable.');
               }
             } catch (error) {
-              console.error('Error showing auth flow:', error);
-              alert('An error occurred while trying to connect. Please try again.');
+              alert('An error occurred while trying to connect.');
             }
           }} 
           className="btn btn-primary text-lg px-8 py-3"

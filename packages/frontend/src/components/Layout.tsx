@@ -8,20 +8,16 @@ const Layout = () => {
   let contextData;
   try {
     contextData = useSafeDynamicContext();
-    console.log('Layout: contextData obtained', contextData);
   } catch (error) {
-    console.error('Layout: Error getting context', error);
     contextData = {};
   }
   
   // Create fallback functions if needed
   const fallbackShowAuthFlow = () => {
-    console.log('Fallback showAuthFlow called from Layout');
     alert('Authentication is currently unavailable. Please try again later.');
   };
   
   const fallbackHandleLogOut = () => {
-    console.log('Fallback handleLogOut called from Layout');
     alert('Logout is currently unavailable. Please try again later.');
   };
   

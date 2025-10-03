@@ -23,22 +23,13 @@ function App() {
   useEffect(() => {
     const timer = setTimeout(() => {
       try {
-        // Add more detailed logging
-        console.log('Checking Dynamic.xyz SDK initialization...');
-        console.log('EthereumWalletConnectors available:', !!EthereumWalletConnectors);
-        console.log('DynamicContextProvider available:', !!DynamicContextProvider);
-        
-        // Instead of checking for window.dynamic, check if we have the required components
-        // and assume we can use the real SDK
+        // Check if we have the required components
         if (!!DynamicContextProvider && !!EthereumWalletConnectors) {
-          console.log('Dynamic.xyz SDK components available, using real mode');
           setAppState(prev => ({ ...prev, isLoading: false, sdkReady: true }));
         } else {
-          console.warn('Dynamic.xyz SDK components not fully available, using fallback mode');
           setAppState(prev => ({ ...prev, isLoading: false, useFallback: true }));
         }
       } catch (error) {
-        console.error('Error during initialization:', error);
         setAppState(prev => ({
           ...prev,
           isLoading: false,
@@ -46,7 +37,7 @@ function App() {
           initError: error instanceof Error ? error.message : 'Failed to initialize application'
         }));
       }
-    }, 1000);
+    }, 500);
     
     return () => clearTimeout(timer);
   }, []);
@@ -86,7 +77,6 @@ function App() {
   const AppContent = () => {
     // If we need to use the fallback mode
     if (useFallback) {
-      console.log('Rendering with MockDynamicProvider');
       return (
         <MockDynamicProvider>
           <AppRoutes showFallbackNotice={true} />
@@ -96,7 +86,6 @@ function App() {
     
     // If SDK is ready, use the real provider
     try {
-      console.log('Attempting to render with DynamicContextProvider');
       return (
         <DynamicContextProvider
           settings={{
@@ -108,7 +97,6 @@ function App() {
         </DynamicContextProvider>
       );
     } catch (error) {
-      console.error('Error rendering DynamicContextProvider:', error);
       // If there's an error with the real provider, fall back to the mock
       return (
         <MockDynamicProvider>
