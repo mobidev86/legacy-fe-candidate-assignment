@@ -9,7 +9,7 @@ function App() {
   return (
     <DynamicContextProvider
       settings={{
-        environmentId: 'REPLACE_WITH_YOUR_DYNAMIC_ENVIRONMENT_ID', // You'll need to replace this with your actual Dynamic.xyz environment ID
+        environmentId: '04bf994f-d77d-4356-aeab-f6f0c2a1e2c1',
         walletConnectors: [EthereumWalletConnectors],
         evmNetworks: [
           {
