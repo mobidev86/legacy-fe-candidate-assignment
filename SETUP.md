@@ -131,3 +131,51 @@ If issues persist:
 - Ensure you're using the correct Dynamic.xyz environment ID
 - Try clearing localStorage and browser cache
 - Verify that the backend server is running and accessible
+
+### "Cannot read properties of undefined (reading 'toString')" Error
+
+If you encounter this specific error, it's likely due to one of the following issues:
+
+1. **Dynamic.xyz Environment ID**: The environment ID might be undefined or not properly converted to a string. We've fixed this by using hardcoded string literals instead of environment variables.
+
+2. **Wallet Address Handling**: When trying to display or manipulate wallet addresses that might be undefined. We've added defensive code to check for undefined values before calling methods like `toString()` or `substring()`.
+
+3. **API Response Handling**: When processing verification responses that might have unexpected formats. We've added validation and fallback values for all API responses.
+
+4. **Component Initialization**: Components trying to access properties before they're fully initialized. We've added loading states and proper initialization checks.
+
+#### Latest Fixes (More Aggressive Approach)
+
+If you're still experiencing the error after the initial fixes, we've implemented more aggressive solutions:
+
+1. **Fallback Context System**: We've created a fallback mechanism that will render the app even if the Dynamic.xyz SDK fails to initialize properly.
+
+2. **Hardcoded Values**: We've completely eliminated the use of environment variables and dynamic values in critical parts of the code, using string literals instead.
+
+3. **SDK Detection**: We now check if the Dynamic.xyz SDK is properly loaded in the window object before attempting to use it.
+
+4. **String Concatenation**: We've replaced `toString()` calls with string concatenation (`'' + value`) which is more forgiving with undefined values.
+
+5. **IIFE for Complex Logic**: We've wrapped complex logic in Immediately Invoked Function Expressions (IIFEs) to isolate and handle errors more effectively.
+
+### "useDynamicContext must be used within a DynamicContextProvider" Error
+
+If you encounter this error, it means components are trying to use the Dynamic.xyz context hook outside of its provider. We've implemented a comprehensive solution:
+
+1. **Mock Context Provider**: We've created a mock implementation of the Dynamic.xyz context that provides the same API surface but works without the actual SDK.
+
+2. **Safe Context Hook**: We've implemented a `useSafeDynamicContext` hook that automatically falls back to the mock implementation if the real one fails.
+
+3. **Graceful Degradation**: The application now works in fallback mode with mock wallet functionality when the Dynamic.xyz SDK isn't available or fails to initialize.
+
+4. **Visual Indicator**: A yellow notification bar appears when running in fallback mode so users are aware of the limited functionality.
+
+This approach ensures the application remains functional even when there are issues with the Dynamic.xyz SDK integration.
+
+The fixes include:
+
+- Explicit type checking with `typeof` before calling methods
+- Using string literals and concatenation instead of `toString()`
+- Adding try-catch blocks around potentially problematic code
+- Providing fallback values for undefined properties
+- Creating fallback UI components that work without the Dynamic.xyz SDK

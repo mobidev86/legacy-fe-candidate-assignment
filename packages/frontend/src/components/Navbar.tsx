@@ -1,11 +1,15 @@
 import { Link } from 'react-router-dom';
-import { useDynamicContext } from '@dynamic-labs/sdk-react-core';
+// Import our safe context hook instead of the direct Dynamic.xyz hook
+import { useSafeDynamicContext } from '../context/DynamicContext';
 import { useState, useEffect } from 'react';
 
 const Navbar = () => {
-  // Cast the context to any to avoid TypeScript errors with the Dynamic SDK
-  const dynamicContext = useDynamicContext() as any;
-  const { user, handleLogOut, showAuthFlow } = dynamicContext;
+  // Use our safe context hook that works with both real and mock contexts
+  const dynamicContext = useSafeDynamicContext() as any;
+  // Use optional chaining to avoid errors if dynamicContext is undefined
+  const user = dynamicContext?.user;
+  const handleLogOut = dynamicContext?.handleLogOut;
+  const showAuthFlow = dynamicContext?.showAuthFlow;
   const [isLoading, setIsLoading] = useState(true);
   
   // Add a small delay to ensure the user state is properly loaded
@@ -27,9 +31,25 @@ const Navbar = () => {
     }
   };
   
-  // Get wallet address safely
-  // Access the wallet address from the user object, with proper type handling
-  const walletAddress = user ? (user as any).walletPublicKey || '' : '';
+  // Get wallet address safely with multiple fallbacks
+  const getWalletAddress = () => {
+    try {
+      if (!user) return '';
+      if (typeof user !== 'object') return '';
+      
+      // Try to access walletPublicKey safely
+      const walletKey = (user as any).walletPublicKey;
+      if (walletKey === null || walletKey === undefined) return '';
+      
+      // Return as plain string, avoiding toString()
+      return '' + walletKey;
+    } catch (error) {
+      console.error('Error getting wallet address:', error);
+      return '';
+    }
+  };
+  
+  const walletAddress = getWalletAddress();
 
   return (
     <nav className="bg-white shadow-md">
@@ -61,7 +81,11 @@ const Navbar = () => {
                 <button
                   onClick={() => {
                     try {
-                      handleLogOut();
+                      if (typeof handleLogOut === 'function') {
+                        handleLogOut();
+                      } else {
+                        console.error('handleLogOut is not a function');
+                      }
                     } catch (error) {
                       console.error('Error logging out:', error);
                     }
@@ -75,7 +99,13 @@ const Navbar = () => {
               <button
                 onClick={() => {
                   try {
-                    showAuthFlow();
+                    if (typeof showAuthFlow === 'function') {
+                      showAuthFlow();
+                    } else {
+                      console.error('showAuthFlow is not a function');
+                      // Fallback: reload the page as a last resort
+                      window.location.reload();
+                    }
                   } catch (error) {
                     console.error('Error showing auth flow:', error);
                   }

@@ -1,11 +1,12 @@
-import { useDynamicContext } from '@dynamic-labs/sdk-react-core';
+// Import our safe context hook instead of the direct Dynamic.xyz hook
+import { useSafeDynamicContext } from '../context/DynamicContext';
 import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 
 const HomePage = () => {
-  // Cast the context to any to avoid TypeScript errors with the Dynamic SDK
-  const dynamicContext = useDynamicContext() as any;
-  const { user, showAuthFlow } = dynamicContext;
+  // Use our safe context hook that works with both real and mock contexts
+  const dynamicContext = useSafeDynamicContext() as any;
+  const { user, showAuthFlow } = dynamicContext || {};
   const [isLoading, setIsLoading] = useState(true);
   
   // Add a small delay to ensure the user state is properly loaded

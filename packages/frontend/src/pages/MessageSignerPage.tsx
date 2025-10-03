@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
-import { useDynamicContext } from '@dynamic-labs/sdk-react-core';
+// Import our safe context hook instead of the direct Dynamic.xyz hook
+import { useSafeDynamicContext } from '../context/DynamicContext';
 import MessageForm from '../components/MessageForm';
 import MessageHistory from '../components/MessageHistory';
 import { SignedMessage } from '../types/message';
 
 const MessageSignerPage = () => {
-  // Cast the context to any to avoid TypeScript errors with the Dynamic SDK
-  const dynamicContext = useDynamicContext() as any;
-  const { user, showAuthFlow } = dynamicContext;
+  // Use our safe context hook that works with both real and mock contexts
+  const dynamicContext = useSafeDynamicContext() as any;
+  const { user, showAuthFlow } = dynamicContext || {};
   const [messageHistory, setMessageHistory] = useState<SignedMessage[]>([]);
   
   // Load message history from localStorage on component mount

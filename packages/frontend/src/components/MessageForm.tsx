@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useDynamicContext } from '@dynamic-labs/sdk-react-core';
+// Import our safe context hook instead of the direct Dynamic.xyz hook
+import { useSafeDynamicContext } from '../context/DynamicContext';
 import { verifySignature } from '../services/api';
 import { SignedMessage, VerificationResponse } from '../types/message';
 
@@ -8,9 +9,9 @@ interface MessageFormProps {
 }
 
 const MessageForm = ({ addToHistory }: MessageFormProps) => {
-  // Cast the context to any to avoid TypeScript errors with the Dynamic SDK
-  const dynamicContext = useDynamicContext() as any;
-  const { user, primaryWallet } = dynamicContext;
+  // Use our safe context hook that works with both real and mock contexts
+  const dynamicContext = useSafeDynamicContext() as any;
+  const { user, primaryWallet } = dynamicContext || {};
   const [message, setMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
@@ -51,7 +52,23 @@ const MessageForm = ({ addToHistory }: MessageFormProps) => {
     
     try {
       // Sign the message using the connected wallet
-      const signature = await primaryWallet.signMessage({ message });
+      if (!primaryWallet || typeof primaryWallet.signMessage !== 'function') {
+        throw new Error('Wallet not properly connected or does not support signing');
+      }
+      
+      // Use try-catch for the actual signing operation
+      let signature;
+      try {
+        signature = await primaryWallet.signMessage({ message });
+        
+        // Verify that signature is a valid string
+        if (!signature || typeof signature !== 'string') {
+          throw new Error('Invalid signature format returned from wallet');
+        }
+      } catch (signError) {
+        console.error('Error during message signing:', signError);
+        throw new Error(signError instanceof Error ? signError.message : 'Failed to sign message with wallet');
+      }
       
       // Create a new signed message object
       const newSignedMessage: SignedMessage = {
@@ -62,17 +79,53 @@ const MessageForm = ({ addToHistory }: MessageFormProps) => {
       };
       
       // Verify the signature with the backend
-      const verificationResponse = await verifySignature(message, signature);
-      
-      // Update the signed message with verification results
-      newSignedMessage.verified = verificationResponse.isValid;
-      newSignedMessage.signer = verificationResponse.signer;
-      
-      // Add to history
-      addToHistory(newSignedMessage);
-      
-      // Show verification result
-      setVerificationResult(verificationResponse);
+      let verificationResponse;
+      try {
+        verificationResponse = await verifySignature(message, signature);
+        
+        // Validate the response
+        if (!verificationResponse || typeof verificationResponse !== 'object') {
+          throw new Error('Invalid verification response format');
+        }
+        
+        // Ensure the response has the expected properties
+        const isValid = verificationResponse.isValid === true;
+        const signer = verificationResponse.signer || '';
+        
+        // Update the signed message with verification results
+        newSignedMessage.verified = isValid;
+        newSignedMessage.signer = signer;
+        
+        // Add to history
+        addToHistory(newSignedMessage);
+        
+        // Show verification result
+        setVerificationResult({
+          isValid,
+          signer,
+          originalMessage: message
+        });
+      } catch (verifyError) {
+        console.error('Error verifying signature:', verifyError);
+        
+        // Create a fallback verification result
+        const fallbackResult = {
+          isValid: false,
+          signer: '',
+          originalMessage: message,
+          error: verifyError instanceof Error ? verifyError.message : 'Verification failed'
+        };
+        
+        // Update the signed message with error state
+        newSignedMessage.verified = false;
+        newSignedMessage.signer = '';
+        
+        // Add to history anyway
+        addToHistory(newSignedMessage);
+        
+        // Show error result
+        setVerificationResult(fallbackResult as VerificationResponse);
+      }
       
       // Clear the form
       setMessage('');
@@ -119,7 +172,23 @@ const MessageForm = ({ addToHistory }: MessageFormProps) => {
             Connected Address
           </label>
           <div className="bg-gray-100 p-2 rounded text-gray-800 font-mono text-sm break-all">
-            {user?.walletPublicKey || 'Not connected'}
+            {(() => {
+              // Safely extract wallet address with multiple fallbacks
+              try {
+                if (!user) return 'Not connected';
+                if (typeof user !== 'object') return 'Invalid user data';
+                
+                // Try to access walletPublicKey safely
+                const walletKey = user.walletPublicKey;
+                if (walletKey === null || walletKey === undefined) return 'No wallet address';
+                
+                // Return as plain string, avoiding toString()
+                return '' + walletKey;
+              } catch (error) {
+                console.error('Error displaying wallet address:', error);
+                return 'Error displaying address';
+              }
+            })()}
           </div>
         </div>
         
@@ -135,8 +204,13 @@ const MessageForm = ({ addToHistory }: MessageFormProps) => {
               {verificationResult.isValid ? 'Signature Valid ✓' : 'Signature Invalid ✗'}
             </p>
             <p className="text-sm mt-1">
-              Signer: <span className="font-mono">{verificationResult.signer}</span>
+              Signer: <span className="font-mono">{verificationResult.signer || 'Unknown'}</span>
             </p>
+            {(verificationResult as any).error && (
+              <p className="text-sm mt-1 text-red-600">
+                Error: {(verificationResult as any).error}
+              </p>
+            )}
           </div>
         )}
         
