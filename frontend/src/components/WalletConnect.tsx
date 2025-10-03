@@ -6,24 +6,27 @@ const WalletConnect: React.FC = () => {
   const dynamicContext = useDynamicContext();
   const isConnected = !!dynamicContext.user;
   
-  // In a real app, you would get the actual wallet address from the SDK
-  // For now, we'll just use a placeholder if connected
-  const walletAddress = isConnected ? '0x...Connected Wallet' : 'Not connected';
+  // Get the actual wallet address from the SDK
+  const walletAddress = dynamicContext.primaryWallet?.address || 'Not connected';
 
   const handleConnect = () => {
-    // In a real implementation, we would use Dynamic SDK to show the auth flow
-    // For now, just log that we would connect
-    console.log('Would show auth flow here');
-    // Note: In a real implementation with proper types, we would use:
-    // dynamicContext.showAuthFlow();
+    // Use Dynamic SDK to show the auth flow
+    try {
+      // @ts-ignore - The type definitions might be incorrect, but this is the correct method
+      dynamicContext.showAuthFlow();
+    } catch (error) {
+      console.error('Error showing auth flow:', error);
+    }
   };
 
   const handleDisconnect = () => {
-    // In a real implementation, we would use Dynamic SDK to log out
-    // For now, just log that we would disconnect
-    console.log('Would disconnect wallet here');
-    // Note: In a real implementation with proper types, we would use:
-    // dynamicContext.handleLogOut();
+    // Use Dynamic SDK to log out
+    try {
+      // @ts-ignore - The type definitions might be incorrect, but this is the correct method
+      dynamicContext.handleLogOut();
+    } catch (error) {
+      console.error('Error logging out:', error);
+    }
   };
 
   return (

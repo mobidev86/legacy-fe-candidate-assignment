@@ -30,14 +30,26 @@ const MessageForm: React.FC = () => {
       setLoading(true);
       setError(null);
 
-      // In a real implementation, we would use the Dynamic SDK to sign the message
-      // For now, we'll simulate signing with a mock signature
-      const mockSignature = `0x${Array(130).fill('0123456789abcdef'[Math.floor(Math.random() * 16)]).join('')}`;
+      // Use the Dynamic SDK to sign the message
+      let signature;
+      try {
+        // @ts-ignore - The type definitions might be incorrect
+        signature = await dynamicContext.primaryWallet?.signMessage(message);
+        
+        if (!signature) {
+          throw new Error('Failed to get signature from wallet');
+        }
+      } catch (signError) {
+        console.error('Error signing with wallet:', signError);
+        setError('Failed to sign message with wallet');
+        setLoading(false);
+        return;
+      }
       
       // Create a signed message object
       const signedMessage: SignedMessage = {
         message,
-        signature: mockSignature,
+        signature,
         timestamp: Date.now(),
       };
 
@@ -46,10 +58,22 @@ const MessageForm: React.FC = () => {
 
       // Verify the signature with our backend
       try {
-        await verifySignature(message, mockSignature);
+        const verificationResult = await verifySignature(message, signature);
+        console.log('Verification result:', verificationResult);
+        
+        // Update the message with verification result
+        addMessage({
+          ...signedMessage,
+          verified: verificationResult.isValid,
+          signer: verificationResult.signer
+        });
       } catch (verifyError) {
         console.error('Verification error:', verifyError);
-        // Continue anyway for demo purposes
+        // Continue anyway but mark as unverified
+        addMessage({
+          ...signedMessage,
+          verified: false
+        });
       }
       
       // Clear the form

@@ -1,22 +1,34 @@
 import React from 'react';
 import './App.css';
 import { DynamicContextProvider } from '@dynamic-labs/sdk-react-core';
+// Import without specifying the exact export
+import * as EthereumModule from '@dynamic-labs/ethereum';
 import WalletConnect from './components/WalletConnect';
 import MessageForm from './components/MessageForm';
 import MessageHistory from './components/MessageHistory';
 import { MessageProvider } from './contexts/MessageContext';
 
 function App() {
-  // Replace with your Dynamic.xyz environment ID
-  const dynamicEnvironmentId = process.env.REACT_APP_DYNAMIC_ENVIRONMENT_ID || 'YOUR_DYNAMIC_ENVIRONMENT_ID';
+  // Get the Dynamic.xyz environment ID from .env
+  const dynamicEnvironmentId = process.env.REACT_APP_DYNAMIC_ENVIRONMENT_ID;
+  
+  if (!dynamicEnvironmentId || dynamicEnvironmentId === 'YOUR_DYNAMIC_ENVIRONMENT_ID') {
+    console.error('Missing REACT_APP_DYNAMIC_ENVIRONMENT_ID in .env file');
+  }
+
+  // Create settings object with type assertion to avoid TypeScript errors
+  const settings = {
+    environmentId: dynamicEnvironmentId || '',
+  };
+
+  // Add wallet connectors if available
+  if (EthereumModule.EthereumWalletConnectors) {
+    (settings as any).walletConnectors = [EthereumModule.EthereumWalletConnectors];
+  }
 
   return (
-    // Note: In a real implementation, you would properly configure the Dynamic SDK
-    // For now, we're using a simplified version to avoid TypeScript errors
     <DynamicContextProvider
-      settings={{
-        environmentId: dynamicEnvironmentId,
-      }}
+      settings={settings as any}
     >
       <MessageProvider>
         <div className="App">
