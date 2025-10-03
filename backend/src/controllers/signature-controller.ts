@@ -1,14 +1,10 @@
 import { Request, Response } from 'express';
 import { ethers } from 'ethers';
-
-interface VerifySignatureRequest {
-  message: string;
-  signature: string;
-}
+import { VerificationRequest, VerificationResponse } from '@web3-message-signer/shared';
 
 export const verifySignature = async (req: Request, res: Response) => {
   try {
-    const { message, signature } = req.body as VerifySignatureRequest;
+    const { message, signature } = req.body as VerificationRequest;
 
     // Validate input
     if (!message || !signature) {
@@ -22,11 +18,13 @@ export const verifySignature = async (req: Request, res: Response) => {
     const messageHash = ethers.hashMessage(message);
     const recoveredAddress = ethers.recoverAddress(messageHash, signature);
 
-    return res.status(200).json({
+    const response: VerificationResponse = {
       isValid: true,
       signer: recoveredAddress,
       originalMessage: message
-    });
+    };
+    
+    return res.status(200).json(response);
   } catch (error) {
     console.error('Error verifying signature:', error);
     

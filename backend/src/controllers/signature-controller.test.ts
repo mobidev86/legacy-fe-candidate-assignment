@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { verifySignature } from './signature-controller';
+import { VerificationRequest, VerificationResponse } from '@web3-message-signer/shared';
 
 // Mock ethers library
 jest.mock('ethers', () => ({
@@ -14,11 +15,13 @@ describe('Signature Controller', () => {
 
   beforeEach(() => {
     jsonMock = jest.fn();
+    const requestBody: VerificationRequest = {
+      message: 'Test message',
+      signature: '0xsignature',
+    };
+    
     mockRequest = {
-      body: {
-        message: 'Test message',
-        signature: '0xsignature',
-      },
+      body: requestBody,
     };
     mockResponse = {
       status: jest.fn().mockReturnThis(),
@@ -29,12 +32,14 @@ describe('Signature Controller', () => {
   it('should verify a valid signature', async () => {
     await verifySignature(mockRequest as Request, mockResponse as Response);
 
-    expect(mockResponse.status).toHaveBeenCalledWith(200);
-    expect(jsonMock).toHaveBeenCalledWith({
+    const expectedResponse: VerificationResponse = {
       isValid: true,
       signer: '0x1234567890abcdef1234567890abcdef12345678',
       originalMessage: 'Test message',
-    });
+    };
+    
+    expect(mockResponse.status).toHaveBeenCalledWith(200);
+    expect(jsonMock).toHaveBeenCalledWith(expectedResponse);
   });
 
   it('should return 400 if message is missing', async () => {

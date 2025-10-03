@@ -18,7 +18,12 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
-    "jsx": "react-jsx"
+    "jsx": "react-jsx",
+    "baseUrl": ".",
+    "paths": {
+      "@web3-message-signer/shared": ["../packages/shared/src"],
+      "@web3-message-signer/shared/*": ["../packages/shared/src/*"]
+    }
   },
   "include": [
     "src"

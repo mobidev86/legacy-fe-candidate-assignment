@@ -1,13 +1,4 @@
-export interface SignedMessage {
-  message: string;
-  signature: string;
-  timestamp: number;
-  verified?: boolean;
-  signer?: string;
-}
+// Re-export types from shared package
+export { SignedMessage, VerificationRequest, VerificationResponse } from '@web3-message-signer/shared';
 
-export interface VerificationResponse {
-  isValid: boolean;
-  signer: string;
-  originalMessage: string;
-}
+// Add any frontend-specific types here
