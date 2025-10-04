@@ -58,7 +58,6 @@ const Navbar = ({ user, primaryWallet, handleLogOut, showAuthFlow }: NavbarProps
     try {
       return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
     } catch (error) {
-      console.error('Error shortening address:', error);
       return 'Invalid address';
     }
   }, []);
@@ -93,7 +92,6 @@ const Navbar = ({ user, primaryWallet, handleLogOut, showAuthFlow }: NavbarProps
       
       return '';
     } catch (error) {
-      console.error('Error getting wallet address:', error);
       return '';
     }
   }, [user, primaryWallet]);

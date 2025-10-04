@@ -20,7 +20,6 @@ const MessageHistory = ({ messages = [] }: MessageHistoryProps) => {
         relativeTime: getRelativeTime(date)
       };
     } catch (error) {
-      console.error('Error formatting date:', error);
       return {
         fullDate: 'Invalid date',
         relativeTime: 'Unknown'

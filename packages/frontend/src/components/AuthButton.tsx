@@ -36,7 +36,6 @@ const AuthButton: React.FC<AuthButtonProps> = ({
     if (typeof showAuthFlow === 'function') {
       showAuthFlow();
     } else {
-      console.error('showAuthFlow is not available');
       alert('Authentication is currently unavailable. Please try again later.');
     }
   };
@@ -45,7 +44,6 @@ const AuthButton: React.FC<AuthButtonProps> = ({
     if (typeof handleLogOut === 'function') {
       handleLogOut();
     } else {
-      console.error('handleLogOut is not available');
       alert('Logout is currently unavailable.');
     }
   };

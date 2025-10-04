@@ -74,7 +74,6 @@ const MessageForm = ({ addToHistory, user, primaryWallet, addMessageToHistory }:
       
       return 'No wallet address';
     } catch (error) {
-      console.error('Error displaying wallet address:', error);
       return 'Error displaying address';
     }
   };
@@ -134,8 +133,6 @@ const MessageForm = ({ addToHistory, user, primaryWallet, addMessageToHistory }:
           throw new Error('Message cannot be empty');
         }
         
-        console.log('Signing message:', messageToSign);
-        
         // Sign the message - Dynamic SDK expects just the string, not an object
         signature = await primaryWallet.signMessage(messageToSign);
         
@@ -143,10 +140,7 @@ const MessageForm = ({ addToHistory, user, primaryWallet, addMessageToHistory }:
         if (!signature || typeof signature !== 'string') {
           throw new Error('Invalid signature format returned from wallet');
         }
-        
-        console.log('Signature received:', signature);
       } catch (signError) {
-        console.error('Error during message signing:', signError);
         throw new Error(signError instanceof Error ? signError.message : 'Failed to sign message with wallet');
       }
       
@@ -191,8 +185,6 @@ const MessageForm = ({ addToHistory, user, primaryWallet, addMessageToHistory }:
           originalMessage: message
         });
       } catch (verifyError) {
-        console.error('Error verifying signature:', verifyError);
-        
         // Create a fallback verification result
         const fallbackResult = {
           isValid: false,
@@ -219,7 +211,6 @@ const MessageForm = ({ addToHistory, user, primaryWallet, addMessageToHistory }:
       // Clear the form
       setMessage('');
     } catch (err) {
-      console.error('Error signing message:', err);
       setError(err instanceof Error ? err.message : 'Failed to sign message');
       setIsSigningStep(false);
       setIsVerifyingStep(false);

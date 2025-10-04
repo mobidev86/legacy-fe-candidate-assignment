@@ -27,7 +27,6 @@ export const verifySignature = async (req, res, next) => {
       signer = ethers.verifyMessage(message, signature);
       isValid = true;
     } catch (error) {
-      console.error('Signature verification error:', error);
       isValid = false;
       signer = '';
     }

@@ -52,11 +52,11 @@ function App() {
       walletConnectors: [EthereumWalletConnectors],
       // Enable embedded wallets for email authentication
       eventsCallbacks: {
-        onAuthSuccess: (args: any) => {
-          console.log('Auth success:', args);
+        onAuthSuccess: () => {
+          // Auth success
         },
         onLogout: () => {
-          console.log('User logged out');
+          // User logged out
         }
       }
     };

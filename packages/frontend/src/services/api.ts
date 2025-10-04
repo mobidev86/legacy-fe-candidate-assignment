@@ -32,8 +32,6 @@ export const verifySignature = async (
     const data = await response.json();
     return data;
   } catch (error) {
-    console.error('Error verifying signature:', error);
-    
     // Return a fallback response in case of network errors
     // This helps prevent the UI from crashing
     if (error instanceof Error && error.message.includes('Failed to fetch')) {

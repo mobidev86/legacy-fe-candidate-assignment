@@ -31,8 +31,8 @@ export interface SignedMessageType {
 const defaultContext: EnhancedDynamicContextType = {
   user: null,
   primaryWallet: null,
-  handleLogOut: () => console.log('Mock logout called'),
-  showAuthFlow: () => console.log('Mock auth flow called'),
+  handleLogOut: () => {},
+  showAuthFlow: () => {},
   isAuthenticated: false,
   isLoading: false,
   messageHistory: [],
@@ -56,7 +56,7 @@ export const MockDynamicProvider: React.FC<{ children: React.ReactNode }> = ({ c
       try {
         setMessageHistory(JSON.parse(savedHistory));
       } catch (error) {
-        console.error('Failed to parse message history:', error);
+        // Failed to parse message history
       }
     }
   }, []);
@@ -86,7 +86,6 @@ export const MockDynamicProvider: React.FC<{ children: React.ReactNode }> = ({ c
       });
       setIsAuthenticated(true);
       setIsLoading(false);
-      console.log('Mock auth flow triggered - user authenticated with email');
     }, 1000);
   }, []);
 
@@ -99,7 +98,6 @@ export const MockDynamicProvider: React.FC<{ children: React.ReactNode }> = ({ c
       setUser(null);
       setIsAuthenticated(false);
       setIsLoading(false);
-      console.log('Mock logout triggered - user logged out');
     }, 500);
   }, []);
 
@@ -109,8 +107,6 @@ export const MockDynamicProvider: React.FC<{ children: React.ReactNode }> = ({ c
     chainId: 1, // Ethereum Mainnet
     connector: 'mock',
     signMessage: async ({ message }: { message: string }) => {
-      console.log('Mock signing message:', message);
-      
       // Simulate signing delay
       await new Promise(resolve => setTimeout(resolve, 800));
       
@@ -142,22 +138,18 @@ export const useMockDynamicContext = () => useContext(MockDynamicContext);
 
 // Centralized fallback authentication function
 const createFallbackAuthFlow = (context?: any) => () => {
-  console.log('Fallback showAuthFlow called');
-  
   // Try setShowAuthFlow first (newer SDK versions)
   if (context && typeof context.setShowAuthFlow === 'function') {
-    console.log('Using setShowAuthFlow from context');
     try {
       context.setShowAuthFlow(true);
       return;
     } catch (error) {
-      console.error('setShowAuthFlow failed:', error);
+      // setShowAuthFlow failed, try other methods
     }
   }
   
   // Check if we can access the authentication flow through other means
   if (context && typeof context.openWallet === 'function') {
-    console.log('Using openWallet as fallback');
     context.openWallet();
     return;
   }
@@ -165,12 +157,10 @@ const createFallbackAuthFlow = (context?: any) => () => {
   // Try to access the authentication modal through the window.dynamic object
   if (window && (window as any).dynamic) {
     if (typeof (window as any).dynamic.open === 'function') {
-      console.log('Using window.dynamic.open as fallback');
       (window as any).dynamic.open();
       return;
     }
     if ((window as any).dynamic.auth && typeof (window as any).dynamic.auth.openAuth === 'function') {
-      console.log('Using window.dynamic.auth.openAuth as fallback');
       (window as any).dynamic.auth.openAuth();
       return;
     }
@@ -187,7 +177,6 @@ const messageHistoryManager = {
       const savedHistory = localStorage.getItem('messageHistory');
       return savedHistory ? JSON.parse(savedHistory) : [];
     } catch (error) {
-      console.error('Failed to parse message history:', error);
       return [];
     }
   },
@@ -198,7 +187,6 @@ const messageHistoryManager = {
       localStorage.setItem('messageHistory', JSON.stringify(updatedHistory));
       return updatedHistory;
     } catch (error) {
-      console.error('Failed to add message to history:', error);
       return [];
     }
   }
@@ -207,36 +195,25 @@ const messageHistoryManager = {
 // Export a unified hook that will work regardless of which context is available
 export const useSafeDynamicContext = () => {
   try {
-    console.log('Attempting to use real Dynamic.xyz context...');
     const context = useRealDynamicContext();
     
     // Check if context is actually populated
     const contextAny = context as any;
     
-    // Debug logging (can be removed in production)
-    if (process.env.NODE_ENV === 'development') {
-      console.log('Dynamic SDK loaded, user authenticated:', !!context.user);
-      console.log('Primary wallet address:', context.primaryWallet?.address);
-    }
-    
     // Determine the best authentication method to use
     let authFlowFunction;
     
     if (typeof context.setShowAuthFlow === 'function') {
-      console.log('Using setShowAuthFlow from context');
       authFlowFunction = () => {
         try {
           context.setShowAuthFlow(true);
         } catch (error) {
-          console.error('setShowAuthFlow error:', error);
           createFallbackAuthFlow(context)();
         }
       };
     } else if (typeof context.showAuthFlow === 'function') {
-      console.log('Using showAuthFlow from context');
       authFlowFunction = context.showAuthFlow;
     } else {
-      console.log('No direct auth method found, using fallback');
       authFlowFunction = createFallbackAuthFlow(context);
     }
     
@@ -245,7 +222,6 @@ export const useSafeDynamicContext = () => {
     
     // If primaryWallet is not available, try to get it from wallets array
     if (!primaryWallet && contextAny.wallets && contextAny.wallets.length > 0) {
-      console.log('Using first wallet from wallets array');
       primaryWallet = contextAny.wallets[0];
     }
     
@@ -263,7 +239,6 @@ export const useSafeDynamicContext = () => {
     return enhancedContext;
   } catch (error) {
     // If using the real hook fails, fall back to our mock
-    console.warn('Falling back to mock Dynamic context:', error);
     return useMockDynamicContext();
   }
 };
