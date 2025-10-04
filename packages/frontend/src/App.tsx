@@ -40,19 +40,27 @@ function App() {
   }, []);
   
   // Memoize settings to prevent unnecessary re-renders (must be before any returns)
-  const dynamicSettings = useMemo(() => ({
-    environmentId: import.meta.env.VITE_DYNAMIC_ENVIRONMENT_ID || "04bf994f-d77d-4356-aeab-f6f0c2a1e2c1",
-    walletConnectors: [EthereumWalletConnectors],
-    // Enable embedded wallets for email authentication
-    eventsCallbacks: {
-      onAuthSuccess: (args: any) => {
-        console.log('Auth success:', args);
-      },
-      onLogout: () => {
-        console.log('User logged out');
-      }
+  const dynamicSettings = useMemo(() => {
+    const environmentId = import.meta.env.VITE_DYNAMIC_ENVIRONMENT_ID;
+    
+    if (!environmentId) {
+      throw new Error('VITE_DYNAMIC_ENVIRONMENT_ID is not set in environment variables');
     }
-  }), []);
+    
+    return {
+      environmentId,
+      walletConnectors: [EthereumWalletConnectors],
+      // Enable embedded wallets for email authentication
+      eventsCallbacks: {
+        onAuthSuccess: (args: any) => {
+          console.log('Auth success:', args);
+        },
+        onLogout: () => {
+          console.log('User logged out');
+        }
+      }
+    };
+  }, []);
   
   // Extract state variables for readability
   const { isLoading, initError, useFallback } = appState;

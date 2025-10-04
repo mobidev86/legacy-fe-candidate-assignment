@@ -24,8 +24,15 @@ This project is a monorepo using pnpm workspaces, with a React frontend and Node
 3. Set up environment variables:
 
    **Frontend**:
-   - Open `packages/frontend/src/App.tsx`
-   - Replace `REPLACE_WITH_YOUR_DYNAMIC_ENVIRONMENT_ID` with your actual Dynamic.xyz environment ID
+   - Copy the example environment file:
+     ```bash
+     cp packages/frontend/.env.example packages/frontend/.env
+     ```
+   - Edit `packages/frontend/.env` and replace `DYNAMIC_ENVIRONMENT_ID` with your actual Dynamic.xyz environment ID:
+     ```
+     VITE_API_URL=http://localhost:4000
+     VITE_DYNAMIC_ENVIRONMENT_ID=your-actual-dynamic-environment-id-here
+     ```
 
    **Backend**:
    - Create a `.env` file in `packages/backend` if it doesn't exist
@@ -34,6 +41,8 @@ This project is a monorepo using pnpm workspaces, with a React frontend and Node
      PORT=4000
      NODE_ENV=development
      ```
+
+   **Security Note**: Never commit the `.env` file to version control. The `.env.example` file serves as a template with placeholder values.
 
 ## Development
 
@@ -115,6 +124,15 @@ For the frontend, you can serve the built files from the `packages/frontend/dist
 - The application is set up as a monorepo using pnpm workspaces
 
 ## Troubleshooting
+
+### Missing Environment Variables
+
+If you see an error like "VITE_DYNAMIC_ENVIRONMENT_ID is not set in environment variables":
+
+1. Ensure you've created the `.env` file in `packages/frontend/`
+2. Verify the file contains `VITE_DYNAMIC_ENVIRONMENT_ID=your-actual-id`
+3. Restart the development server after creating/modifying the `.env` file
+4. Make sure the environment variable name starts with `VITE_` (required by Vite)
 
 ### UI Flickering Issues
 
