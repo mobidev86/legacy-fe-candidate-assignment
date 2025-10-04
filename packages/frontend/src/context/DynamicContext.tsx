@@ -170,7 +170,9 @@ const createFallbackAuthFlow = (context?: any) => () => {
   alert('Authentication flow is not available. Please try again later.');
 };
 
-// Helper to manage message history in localStorage
+// Create a global state manager for message history
+let messageHistoryListeners: Set<(history: SignedMessageType[]) => void> = new Set();
+
 const messageHistoryManager = {
   get: (): SignedMessageType[] => {
     try {
@@ -185,15 +187,33 @@ const messageHistoryManager = {
       const currentHistory = messageHistoryManager.get();
       const updatedHistory = [newMessage, ...currentHistory];
       localStorage.setItem('messageHistory', JSON.stringify(updatedHistory));
+      
+      // Notify all listeners about the update
+      messageHistoryListeners.forEach(listener => listener(updatedHistory));
+      
       return updatedHistory;
     } catch (error) {
       return [];
     }
+  },
+  subscribe: (listener: (history: SignedMessageType[]) => void) => {
+    messageHistoryListeners.add(listener);
+    return () => {
+      messageHistoryListeners.delete(listener);
+    };
   }
 };
 
 // Export a unified hook that will work regardless of which context is available
 export const useSafeDynamicContext = () => {
+  const [messageHistory, setMessageHistory] = useState<SignedMessageType[]>(() => messageHistoryManager.get());
+  
+  // Subscribe to message history changes
+  useEffect(() => {
+    const unsubscribe = messageHistoryManager.subscribe(setMessageHistory);
+    return unsubscribe;
+  }, []);
+  
   try {
     const context = useRealDynamicContext();
     
@@ -231,7 +251,7 @@ export const useSafeDynamicContext = () => {
     const enhancedContext = {
       ...context,
       primaryWallet,
-      messageHistory: messageHistoryManager.get(),
+      messageHistory,
       addMessageToHistory: messageHistoryManager.add,
       showAuthFlow: authFlowFunction
     };
