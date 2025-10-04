@@ -31,60 +31,22 @@ const AuthButton: React.FC<AuthButtonProps> = ({
     </svg>
   );
 
-  // Safe function calls with error handling
+  // Safe function calls - context already provides fallbacks
   const handleConnect = () => {
-    try {
-      if (typeof showAuthFlow === 'function') {
-        console.log('Using provided showAuthFlow function');
-        showAuthFlow();
-        return;
-      }
-      
-      console.warn('showAuthFlow is not a function, trying fallback methods');
-      
-      // Try to find alternative authentication methods in order of preference
-      
-      // 1. Try window.dynamic.open
-      if (window && (window as any).dynamic && typeof (window as any).dynamic.open === 'function') {
-        console.log('Using window.dynamic.open as fallback');
-        (window as any).dynamic.open();
-        return;
-      }
-      
-      // 2. Try window.dynamic.auth.openAuth
-      if (window && 
-          (window as any).dynamic && 
-          (window as any).dynamic.auth && 
-          typeof (window as any).dynamic.auth.openAuth === 'function') {
-        console.log('Using window.dynamic.auth.openAuth as fallback');
-        (window as any).dynamic.auth.openAuth();
-        return;
-      }
-      
-      // If all else fails, show an alert
-      console.error('No authentication method available');
+    if (typeof showAuthFlow === 'function') {
+      showAuthFlow();
+    } else {
+      console.error('showAuthFlow is not available');
       alert('Authentication is currently unavailable. Please try again later.');
-    } catch (error) {
-      console.error('Error connecting:', error);
-      alert('An error occurred while trying to connect.');
     }
   };
 
   const handleDisconnect = () => {
-    try {
-      if (typeof handleLogOut === 'function') {
-        handleLogOut();
-      } else {
-        console.warn('handleLogOut is not a function, providing fallback behavior');
-        // Try to find an alternative logout method
-        if (window && (window as any).dynamic && typeof (window as any).dynamic.logout === 'function') {
-          (window as any).dynamic.logout();
-        } else {
-          alert('Logout is currently unavailable.');
-        }
-      }
-    } catch (error) {
-      console.error('Error logging out:', error);
+    if (typeof handleLogOut === 'function') {
+      handleLogOut();
+    } else {
+      console.error('handleLogOut is not available');
+      alert('Logout is currently unavailable.');
     }
   };
 

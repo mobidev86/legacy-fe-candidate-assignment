@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import { useDynamicContext as useRealDynamicContext } from '@dynamic-labs/sdk-react-core';
 
 // Enhanced interface for our Dynamic context
@@ -63,16 +63,18 @@ export const MockDynamicProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
   // Save message history to localStorage whenever it changes
   useEffect(() => {
-    localStorage.setItem('messageHistory', JSON.stringify(messageHistory));
+    if (messageHistory.length > 0) {
+      localStorage.setItem('messageHistory', JSON.stringify(messageHistory));
+    }
   }, [messageHistory]);
 
   // Add a message to history
-  const addMessageToHistory = (newMessage: SignedMessageType) => {
+  const addMessageToHistory = useCallback((newMessage: SignedMessageType) => {
     setMessageHistory(prev => [newMessage, ...prev]);
-  };
+  }, []);
 
   // Enhanced mock implementation of showAuthFlow with email-based authentication
-  const showAuthFlow = () => {
+  const showAuthFlow = useCallback(() => {
     setIsLoading(true);
     
     // Simulate a login delay
@@ -86,10 +88,10 @@ export const MockDynamicProvider: React.FC<{ children: React.ReactNode }> = ({ c
       setIsLoading(false);
       console.log('Mock auth flow triggered - user authenticated with email');
     }, 1000);
-  };
+  }, []);
 
   // Mock implementation of handleLogOut
-  const handleLogOut = () => {
+  const handleLogOut = useCallback(() => {
     setIsLoading(true);
     
     // Simulate logout delay
@@ -99,10 +101,10 @@ export const MockDynamicProvider: React.FC<{ children: React.ReactNode }> = ({ c
       setIsLoading(false);
       console.log('Mock logout triggered - user logged out');
     }, 500);
-  };
+  }, []);
 
   // Enhanced mock wallet with signMessage capability
-  const primaryWallet = user ? {
+  const primaryWallet = useMemo(() => user ? {
     address: user.walletPublicKey,
     chainId: 1, // Ethereum Mainnet
     connector: 'mock',
@@ -115,9 +117,9 @@ export const MockDynamicProvider: React.FC<{ children: React.ReactNode }> = ({ c
       // Return a mock signature that's more realistic
       return `0x${''.padStart(130, '0123456789abcdef')}`;
     }
-  } : null;
+  } : null, [user]);
 
-  const value = {
+  const value = useMemo(() => ({
     user,
     primaryWallet,
     handleLogOut,
@@ -126,7 +128,7 @@ export const MockDynamicProvider: React.FC<{ children: React.ReactNode }> = ({ c
     isLoading,
     messageHistory,
     addMessageToHistory
-  };
+  }), [user, primaryWallet, handleLogOut, showAuthFlow, isAuthenticated, isLoading, messageHistory, addMessageToHistory]);
 
   return (
     <MockDynamicContext.Provider value={value}>
@@ -138,88 +140,80 @@ export const MockDynamicProvider: React.FC<{ children: React.ReactNode }> = ({ c
 // Create a hook to use the mock context
 export const useMockDynamicContext = () => useContext(MockDynamicContext);
 
+// Centralized fallback authentication function
+const createFallbackAuthFlow = (context?: any) => () => {
+  console.log('Fallback showAuthFlow called');
+  
+  // Check if we can access the authentication flow through other means
+  if (context && typeof context.openWallet === 'function') {
+    console.log('Using openWallet as fallback');
+    context.openWallet();
+    return;
+  }
+  
+  // Try to access the authentication modal through the window.dynamic object
+  if (window && (window as any).dynamic) {
+    if (typeof (window as any).dynamic.open === 'function') {
+      console.log('Using window.dynamic.open as fallback');
+      (window as any).dynamic.open();
+      return;
+    }
+    if ((window as any).dynamic.auth && typeof (window as any).dynamic.auth.openAuth === 'function') {
+      console.log('Using window.dynamic.auth.openAuth as fallback');
+      (window as any).dynamic.auth.openAuth();
+      return;
+    }
+  }
+  
+  // If all else fails, show an alert
+  alert('Authentication flow is not available. Please try again later.');
+};
+
+// Helper to manage message history in localStorage
+const messageHistoryManager = {
+  get: (): SignedMessageType[] => {
+    try {
+      const savedHistory = localStorage.getItem('messageHistory');
+      return savedHistory ? JSON.parse(savedHistory) : [];
+    } catch (error) {
+      console.error('Failed to parse message history:', error);
+      return [];
+    }
+  },
+  add: (newMessage: SignedMessageType): SignedMessageType[] => {
+    try {
+      const currentHistory = messageHistoryManager.get();
+      const updatedHistory = [newMessage, ...currentHistory];
+      localStorage.setItem('messageHistory', JSON.stringify(updatedHistory));
+      return updatedHistory;
+    } catch (error) {
+      console.error('Failed to add message to history:', error);
+      return [];
+    }
+  }
+};
+
 // Export a unified hook that will work regardless of which context is available
 export const useSafeDynamicContext = () => {
   try {
-    // Try to use the real Dynamic context
-    try {
-      console.log('Attempting to use real Dynamic.xyz context...');
-      const context = useRealDynamicContext();
-      console.log('Real Dynamic.xyz context successfully obtained:', context);
-      
-      // If we get here without error, return an enhanced version of the real context
-      // that includes our additional functionality
-      const enhancedContext = {
-        ...context,
-        messageHistory: (() => {
-          // Load message history from localStorage
-          try {
-            const savedHistory = localStorage.getItem('messageHistory');
-            return savedHistory ? JSON.parse(savedHistory) : [];
-          } catch (error) {
-            console.error('Failed to parse message history:', error);
-            return [];
-          }
-        })(),
-        addMessageToHistory: (newMessage: SignedMessageType) => {
-          try {
-            // Get current history
-            const savedHistory = localStorage.getItem('messageHistory');
-            const currentHistory = savedHistory ? JSON.parse(savedHistory) : [];
-            
-            // Add new message to history
-            const updatedHistory = [newMessage, ...currentHistory];
-            
-            // Save updated history
-            localStorage.setItem('messageHistory', JSON.stringify(updatedHistory));
-            
-            return updatedHistory;
-          } catch (error) {
-            console.error('Failed to add message to history:', error);
-            return [];
-          }
-        }
-      };
-      
-      // Ensure showAuthFlow is always a function
-      if (typeof enhancedContext.showAuthFlow !== 'function') {
-        console.log('showAuthFlow is not a function in the real context, providing a fallback');
-        
-        // Define a proper fallback function
-        const fallbackShowAuthFlow = () => {
-          console.log('Fallback showAuthFlow called');
-          
-          // Check if we can access the authentication flow through other means
-          if (enhancedContext && typeof (enhancedContext as any).openWallet === 'function') {
-            console.log('Using openWallet as fallback');
-            (enhancedContext as any).openWallet();
-            return;
-          }
-          
-          // Try to access the authentication modal through the window.dynamic object
-          if (window && (window as any).dynamic && typeof (window as any).dynamic.open === 'function') {
-            console.log('Using window.dynamic.open as fallback');
-            (window as any).dynamic.open();
-            return;
-          }
-          
-          // If all else fails, show an alert
-          alert('Authentication flow is not available. Please try again later.');
-        };
-        
-        // Assign the fallback function to the enhanced context using type assertion
-        (enhancedContext as any).showAuthFlow = fallbackShowAuthFlow;
-      }
-      
-      return enhancedContext;
-    } catch (error) {
-      // If using the real hook fails, fall back to our mock
-      console.warn('Falling back to mock Dynamic context:', error);
-      return useMockDynamicContext();
-    }
+    console.log('Attempting to use real Dynamic.xyz context...');
+    const context = useRealDynamicContext();
+    console.log('Real Dynamic.xyz context successfully obtained:', context);
+    
+    // If we get here without error, return an enhanced version of the real context
+    const enhancedContext = {
+      ...context,
+      messageHistory: messageHistoryManager.get(),
+      addMessageToHistory: messageHistoryManager.add,
+      showAuthFlow: typeof context.showAuthFlow === 'function' 
+        ? context.showAuthFlow 
+        : createFallbackAuthFlow(context)
+    };
+    
+    return enhancedContext;
   } catch (error) {
-    // If importing the real hook fails, fall back to our mock
-    console.warn('Dynamic SDK not available, using mock context:', error);
+    // If using the real hook fails, fall back to our mock
+    console.warn('Falling back to mock Dynamic context:', error);
     return useMockDynamicContext();
   }
 };

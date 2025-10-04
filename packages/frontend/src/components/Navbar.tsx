@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import Logo from './Logo';
 import LoadingSpinner from './LoadingSpinner';
 import AuthButton from './AuthButton';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 
 // Define props interface
 interface NavbarProps {
@@ -31,19 +31,17 @@ const Navbar = ({ user, handleLogOut, showAuthFlow }: NavbarProps = {}) => {
   // Handle scroll effect for navbar
   useEffect(() => {
     const handleScroll = () => {
-      if (window.scrollY > 10) {
-        setIsScrolled(true);
-      } else {
-        setIsScrolled(false);
-      }
+      setIsScrolled(window.scrollY > 10);
     };
     
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
   
   // Close mobile menu when clicking outside
   useEffect(() => {
+    if (!isMobileMenuOpen) return;
+    
     const handleClickOutside = (event: MouseEvent) => {
       if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target as Node)) {
         setIsMobileMenuOpen(false);
@@ -52,9 +50,9 @@ const Navbar = ({ user, handleLogOut, showAuthFlow }: NavbarProps = {}) => {
     
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  }, [isMobileMenuOpen]);
   
-  const shortenAddress = (address: string | undefined | null) => {
+  const shortenAddress = useCallback((address: string | undefined | null) => {
     if (!address || typeof address !== 'string') return 'Not connected';
     try {
       return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
@@ -62,14 +60,12 @@ const Navbar = ({ user, handleLogOut, showAuthFlow }: NavbarProps = {}) => {
       console.error('Error shortening address:', error);
       return 'Invalid address';
     }
-  };
+  }, []);
   
   // Get wallet address safely with multiple fallbacks
-  const getWalletAddress = () => {
+  const walletAddress = useMemo(() => {
     try {
-      // Only use user prop since we're not using the context directly anymore
-      if (!user) return '';
-      if (typeof user !== 'object') return '';
+      if (!user || typeof user !== 'object') return '';
       
       // Try to access address from user.primaryWallet
       if (user.primaryWallet?.address) {
@@ -86,7 +82,9 @@ const Navbar = ({ user, handleLogOut, showAuthFlow }: NavbarProps = {}) => {
       console.error('Error getting wallet address:', error);
       return '';
     }
-  };
+  }, [user]);
+  
+  const displayAddress = useMemo(() => shortenAddress(walletAddress), [walletAddress, shortenAddress]);
 
   return (
     <nav 
@@ -146,7 +144,7 @@ const Navbar = ({ user, handleLogOut, showAuthFlow }: NavbarProps = {}) => {
                   </div>
                   <div className="flex flex-col">
                     <span className="text-sm font-medium text-dark-800">
-                      {shortenAddress(getWalletAddress())}
+                      {displayAddress}
                     </span>
                     {user?.email && (
                       <span className="text-xs text-dark-500">
@@ -208,7 +206,7 @@ const Navbar = ({ user, handleLogOut, showAuthFlow }: NavbarProps = {}) => {
                     </div>
                     <div className="flex flex-col">
                       <span className="text-sm font-medium text-dark-800">
-                        {shortenAddress(getWalletAddress())}
+                        {displayAddress}
                       </span>
                       {user?.email && (
                         <span className="text-xs text-dark-500">
@@ -219,23 +217,19 @@ const Navbar = ({ user, handleLogOut, showAuthFlow }: NavbarProps = {}) => {
                   </div>
                   <AuthButton
                     user={user}
-                    handleLogOut={() => {
-                      if (typeof handleLogOut === 'function') {
-                        handleLogOut();
-                        setIsMobileMenuOpen(false);
-                      }
-                    }}
+                    handleLogOut={useCallback(() => {
+                      handleLogOut?.();
+                      setIsMobileMenuOpen(false);
+                    }, [handleLogOut])}
                     fullWidth={true}
                   />
                 </div>
               ) : (
                 <AuthButton
-                  showAuthFlow={() => {
-                    if (typeof showAuthFlow === 'function') {
-                      showAuthFlow();
-                      setIsMobileMenuOpen(false);
-                    }
-                  }}
+                  showAuthFlow={useCallback(() => {
+                    showAuthFlow?.();
+                    setIsMobileMenuOpen(false);
+                  }, [showAuthFlow])}
                   user={user}
                   fullWidth={true}
                 />

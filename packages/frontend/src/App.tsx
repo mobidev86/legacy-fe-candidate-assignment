@@ -1,7 +1,7 @@
 import { DynamicContextProvider } from '@dynamic-labs/sdk-react-core';
 import { MockDynamicProvider } from './context/DynamicContext';
 import { Routes, Route } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Layout from './components/Layout';
 import HomePage from './pages/HomePage';
 import MessageSignerPage from './pages/MessageSignerPage';
@@ -24,12 +24,8 @@ function App() {
   useEffect(() => {
     const timer = setTimeout(() => {
       try {
-        // Check if we have the required components
-        if (!!DynamicContextProvider && !!EthereumWalletConnectors) {
-          setAppState(prev => ({ ...prev, isLoading: false, sdkReady: true }));
-        } else {
-          setAppState(prev => ({ ...prev, isLoading: false, useFallback: true }));
-        }
+        // SDK components are always available, just mark as ready
+        setAppState(prev => ({ ...prev, isLoading: false, sdkReady: true }));
       } catch (error) {
         setAppState(prev => ({
           ...prev,
@@ -42,6 +38,12 @@ function App() {
     
     return () => clearTimeout(timer);
   }, []);
+  
+  // Memoize settings to prevent unnecessary re-renders (must be before any returns)
+  const dynamicSettings = useMemo(() => ({
+    environmentId: "04bf994f-d77d-4356-aeab-f6f0c2a1e2c1",
+    walletConnectors: [EthereumWalletConnectors]
+  }), []);
   
   // Extract state variables for readability
   const { isLoading, initError, useFallback } = appState;
@@ -69,39 +71,6 @@ function App() {
       </div>
     );
   }
-  
-  // Determine which provider to use
-  const AppContent = () => {
-    // If we need to use the fallback mode
-    if (useFallback) {
-      return (
-        <MockDynamicProvider>
-          <AppRoutes showFallbackNotice={true} />
-        </MockDynamicProvider>
-      );
-    }
-    
-    // If SDK is ready, use the real provider
-    try {
-      return (
-        <DynamicContextProvider
-          settings={{
-            environmentId: "04bf994f-d77d-4356-aeab-f6f0c2a1e2c1",
-            walletConnectors: [EthereumWalletConnectors]
-          }}
-        >
-          <AppRoutes showFallbackNotice={false} />
-        </DynamicContextProvider>
-      );
-    } catch (error) {
-      // If there's an error with the real provider, fall back to the mock
-      return (
-        <MockDynamicProvider>
-          <AppRoutes showFallbackNotice={true} />
-        </MockDynamicProvider>
-      );
-    }
-  };
   
   // Separate component for routes to ensure they're rendered within the correct provider
   const AppRoutes = ({ showFallbackNotice }: { showFallbackNotice: boolean }) => (
@@ -136,9 +105,23 @@ function App() {
     </>
   );
   
+  // Determine which provider to use
+  if (useFallback) {
+    return (
+      <ErrorBoundary>
+        <MockDynamicProvider>
+          <AppRoutes showFallbackNotice={true} />
+        </MockDynamicProvider>
+      </ErrorBoundary>
+    );
+  }
+  
+  // If SDK is ready, use the real provider
   return (
     <ErrorBoundary>
-      <AppContent />
+      <DynamicContextProvider settings={dynamicSettings}>
+        <AppRoutes showFallbackNotice={false} />
+      </DynamicContextProvider>
     </ErrorBoundary>
   );
 }
