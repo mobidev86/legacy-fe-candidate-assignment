@@ -7,12 +7,13 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 // Define props interface
 interface NavbarProps {
   user?: any;
+  primaryWallet?: any;
   handleLogOut?: () => void;
   showAuthFlow?: () => void;
   isAuthenticated?: boolean;
 }
 
-const Navbar = ({ user, handleLogOut, showAuthFlow }: NavbarProps = {}) => {
+const Navbar = ({ user, primaryWallet, handleLogOut, showAuthFlow }: NavbarProps = {}) => {
   // Component props received from Layout
   const [isLoading, setIsLoading] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -65,24 +66,37 @@ const Navbar = ({ user, handleLogOut, showAuthFlow }: NavbarProps = {}) => {
   // Get wallet address safely with multiple fallbacks
   const walletAddress = useMemo(() => {
     try {
-      if (!user || typeof user !== 'object') return '';
+      // First, try to get address from primaryWallet prop
+      if (primaryWallet?.address) {
+        return '' + primaryWallet.address;
+      }
       
-      // Try to access address from user.primaryWallet
-      if (user.primaryWallet?.address) {
+      // Fallback: Try to access address from user.primaryWallet
+      if (user?.primaryWallet?.address) {
         return '' + user.primaryWallet.address;
       }
       
-      // Try to access walletPublicKey safely
-      const walletKey = (user as any).walletPublicKey;
-      if (walletKey === null || walletKey === undefined) return '';
+      // Try verifiedCredentials for embedded wallet
+      const userWithCreds = user as any;
+      if (userWithCreds?.verifiedCredentials && userWithCreds.verifiedCredentials.length > 0) {
+        const embeddedWallet = userWithCreds.verifiedCredentials.find((cred: any) => cred.walletPublicKey);
+        if (embeddedWallet?.walletPublicKey) {
+          return '' + embeddedWallet.walletPublicKey;
+        }
+      }
       
-      // Return as plain string, avoiding toString()
-      return '' + walletKey;
+      // Try to access walletPublicKey safely
+      const walletKey = (user as any)?.walletPublicKey;
+      if (walletKey) {
+        return '' + walletKey;
+      }
+      
+      return '';
     } catch (error) {
       console.error('Error getting wallet address:', error);
       return '';
     }
-  }, [user]);
+  }, [user, primaryWallet]);
   
   const displayAddress = useMemo(() => shortenAddress(walletAddress), [walletAddress, shortenAddress]);
 

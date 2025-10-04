@@ -24,6 +24,7 @@ const Layout = () => {
       
       <Navbar 
         user={contextData?.user} 
+        primaryWallet={contextData?.primaryWallet}
         handleLogOut={contextData?.handleLogOut} 
         showAuthFlow={contextData?.showAuthFlow} 
       />

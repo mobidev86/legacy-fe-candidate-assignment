@@ -209,7 +209,15 @@ export const useSafeDynamicContext = () => {
   try {
     console.log('Attempting to use real Dynamic.xyz context...');
     const context = useRealDynamicContext();
-    console.log('Real Dynamic.xyz context successfully obtained:', context);
+    
+    // Check if context is actually populated
+    const contextAny = context as any;
+    
+    // Debug logging (can be removed in production)
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Dynamic SDK loaded, user authenticated:', !!context.user);
+      console.log('Primary wallet address:', context.primaryWallet?.address);
+    }
     
     // Determine the best authentication method to use
     let authFlowFunction;
@@ -232,9 +240,21 @@ export const useSafeDynamicContext = () => {
       authFlowFunction = createFallbackAuthFlow(context);
     }
     
+    // Get the primary wallet - try multiple sources
+    let primaryWallet = context.primaryWallet;
+    
+    // If primaryWallet is not available, try to get it from wallets array
+    if (!primaryWallet && contextAny.wallets && contextAny.wallets.length > 0) {
+      console.log('Using first wallet from wallets array');
+      primaryWallet = contextAny.wallets[0];
+    }
+    
+    // Wallet successfully retrieved
+    
     // If we get here without error, return an enhanced version of the real context
     const enhancedContext = {
       ...context,
+      primaryWallet,
       messageHistory: messageHistoryManager.get(),
       addMessageToHistory: messageHistoryManager.add,
       showAuthFlow: authFlowFunction

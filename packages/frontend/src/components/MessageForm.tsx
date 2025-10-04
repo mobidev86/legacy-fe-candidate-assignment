@@ -46,21 +46,33 @@ const MessageForm = ({ addToHistory, user, primaryWallet, addMessageToHistory }:
   // Helper function to get wallet address
   const getWalletAddress = () => {
     try {
-      if (!primaryWallet) return 'Not connected';
-      if (typeof primaryWallet !== 'object') return 'Invalid wallet data';
+      if (!primaryWallet && !user) return 'Not connected';
       
-      // Try to access address safely
-      const address = primaryWallet.address;
-      if (address === null || address === undefined) {
-        // Fallback to user.walletPublicKey if available
-        if (user && user.walletPublicKey) {
-          return '' + user.walletPublicKey;
+      // Try to access address from primaryWallet
+      if (primaryWallet && typeof primaryWallet === 'object') {
+        const address = primaryWallet.address;
+        if (address) {
+          return '' + address;
         }
-        return 'No wallet address';
       }
       
-      // Return as plain string, avoiding toString()
-      return '' + address;
+      // Try verifiedCredentials for embedded wallet
+      if (user) {
+        const userWithCreds = user as any;
+        if (userWithCreds.verifiedCredentials && userWithCreds.verifiedCredentials.length > 0) {
+          const embeddedWallet = userWithCreds.verifiedCredentials.find((cred: any) => cred.walletPublicKey);
+          if (embeddedWallet?.walletPublicKey) {
+            return '' + embeddedWallet.walletPublicKey;
+          }
+        }
+        
+        // Fallback to user.walletPublicKey if available
+        if (userWithCreds.walletPublicKey) {
+          return '' + userWithCreds.walletPublicKey;
+        }
+      }
+      
+      return 'No wallet address';
     } catch (error) {
       console.error('Error displaying wallet address:', error);
       return 'Error displaying address';
