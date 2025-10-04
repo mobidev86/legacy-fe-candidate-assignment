@@ -1,0 +1,22 @@
+{
+  "name": "web3-message-signer-verifier",
+  "version": "1.0.0",
+  "description": "Web3 Message Signer & Verifier - Full Stack Application",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm -r run dev",
+    "build": "pnpm -r run build",
+    "start": "pnpm --filter backend start",
+    "test": "pnpm -r run test",
+    "test:backend": "pnpm --filter backend test",
+    "test:frontend": "pnpm --filter frontend test",
+    "test:coverage": "pnpm -r run test:coverage"
+  },
+  "keywords": ["web3", "ethereum", "signature", "dynamic.xyz"],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.18.0",
+  "workspaces": [
+    "packages/*"
+  ]
+}
