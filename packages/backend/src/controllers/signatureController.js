@@ -10,8 +10,8 @@ export const verifySignature = async (req, res, next) => {
   try {
     const { message, signature } = req.body;
     
-    // Validate request body
-    if (!message || !signature) {
+    // Validate request body - check for undefined/null, but allow empty strings
+    if (message === undefined || message === null || signature === undefined || signature === null) {
       return res.status(400).json({
         error: 'Bad Request',
         message: 'Both message and signature are required'

@@ -6,7 +6,11 @@
   "scripts": {
     "dev": "pnpm -r run dev",
     "build": "pnpm -r run build",
-    "start": "pnpm --filter backend start"
+    "start": "pnpm --filter backend start",
+    "test": "pnpm -r run test",
+    "test:backend": "pnpm --filter backend test",
+    "test:frontend": "pnpm --filter frontend test",
+    "test:coverage": "pnpm -r run test:coverage"
   },
   "keywords": ["web3", "ethereum", "signature", "dynamic.xyz"],
   "author": "",
