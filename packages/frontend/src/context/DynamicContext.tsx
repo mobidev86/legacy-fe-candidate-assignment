@@ -144,6 +144,17 @@ export const useMockDynamicContext = () => useContext(MockDynamicContext);
 const createFallbackAuthFlow = (context?: any) => () => {
   console.log('Fallback showAuthFlow called');
   
+  // Try setShowAuthFlow first (newer SDK versions)
+  if (context && typeof context.setShowAuthFlow === 'function') {
+    console.log('Using setShowAuthFlow from context');
+    try {
+      context.setShowAuthFlow(true);
+      return;
+    } catch (error) {
+      console.error('setShowAuthFlow failed:', error);
+    }
+  }
+  
   // Check if we can access the authentication flow through other means
   if (context && typeof context.openWallet === 'function') {
     console.log('Using openWallet as fallback');
@@ -200,14 +211,33 @@ export const useSafeDynamicContext = () => {
     const context = useRealDynamicContext();
     console.log('Real Dynamic.xyz context successfully obtained:', context);
     
+    // Determine the best authentication method to use
+    let authFlowFunction;
+    
+    if (typeof context.setShowAuthFlow === 'function') {
+      console.log('Using setShowAuthFlow from context');
+      authFlowFunction = () => {
+        try {
+          context.setShowAuthFlow(true);
+        } catch (error) {
+          console.error('setShowAuthFlow error:', error);
+          createFallbackAuthFlow(context)();
+        }
+      };
+    } else if (typeof context.showAuthFlow === 'function') {
+      console.log('Using showAuthFlow from context');
+      authFlowFunction = context.showAuthFlow;
+    } else {
+      console.log('No direct auth method found, using fallback');
+      authFlowFunction = createFallbackAuthFlow(context);
+    }
+    
     // If we get here without error, return an enhanced version of the real context
     const enhancedContext = {
       ...context,
       messageHistory: messageHistoryManager.get(),
       addMessageToHistory: messageHistoryManager.add,
-      showAuthFlow: typeof context.showAuthFlow === 'function' 
-        ? context.showAuthFlow 
-        : createFallbackAuthFlow(context)
+      showAuthFlow: authFlowFunction
     };
     
     return enhancedContext;
