@@ -2,12 +2,20 @@ import { useState, useEffect } from 'react';
 import { useSafeDynamicContext } from '../context/DynamicContext';
 import MessageForm from '../components/MessageForm';
 import MessageHistory from '../components/MessageHistory';
+import LoadingSpinner from '../components/LoadingSpinner';
+import AuthButton from '../components/AuthButton';
 
 const MessageSignerPage = () => {
   // Get the context directly - now it's safe because we're inside a provider
   const contextData = useSafeDynamicContext();
   const user = contextData?.user;
-  const showAuthFlow = contextData?.showAuthFlow;
+  // Ensure showAuthFlow is a function or provide a fallback
+  const showAuthFlow = typeof contextData?.showAuthFlow === 'function' 
+    ? contextData.showAuthFlow 
+    : () => {
+        console.warn('showAuthFlow is not available');
+        alert('Authentication flow is not available. Please try again later.');
+      };
   const messageHistory = contextData?.messageHistory || [];
   
   const [isLoading, setIsLoading] = useState(true);
@@ -22,12 +30,7 @@ const MessageSignerPage = () => {
   }, []);
 
   if (isLoading) {
-    return (
-      <div className="text-center py-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600 mx-auto mb-4"></div>
-        <p className="text-gray-600">Loading authentication status...</p>
-      </div>
-    );
+    return <LoadingSpinner size="md" message="Loading authentication status..." className="py-12" />;
   }
   
   // No need for error handling here anymore
@@ -36,21 +39,11 @@ const MessageSignerPage = () => {
       <div className="text-center py-12">
         <h2 className="text-2xl font-bold mb-4">Please connect your wallet</h2>
         <p className="text-gray-600 mb-6">You need to connect your wallet to sign messages</p>
-          <button 
-            onClick={() => {
-              try {
-                if (typeof showAuthFlow === 'function') {
-                  showAuthFlow();
-                } else {
-                  alert('Authentication is currently unavailable.');
-                }
-              } catch (error) {
-                alert('An error occurred while trying to connect.');
-              }
-            }} 
-            className="btn btn-primary text-lg px-8 py-3"
-          >Connect Wallet
-        </button>
+          <AuthButton 
+            showAuthFlow={showAuthFlow}
+            user={user}
+            size="lg"
+          />
       </div>
     );
   }

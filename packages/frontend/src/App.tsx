@@ -6,6 +6,7 @@ import Layout from './components/Layout';
 import HomePage from './pages/HomePage';
 import MessageSignerPage from './pages/MessageSignerPage';
 import ErrorBoundary from './components/ErrorBoundary';
+import LoadingSpinner from './components/LoadingSpinner';
 import { EthereumWalletConnectors } from "@dynamic-labs/ethereum";
 
 // No need for a separate FallbackContext component anymore
@@ -47,11 +48,7 @@ function App() {
   
   // Show loading screen while initializing
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600"></div>
-      </div>
-    );
+    return <LoadingSpinner size="md" fullScreen={true} message="Initializing application..." />;
   }
   
   // Show error screen if initialization failed

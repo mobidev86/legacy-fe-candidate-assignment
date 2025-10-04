@@ -1,5 +1,8 @@
 import { Link } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import Logo from './Logo';
+import LoadingSpinner from './LoadingSpinner';
+import AuthButton from './AuthButton';
+import { useState, useEffect, useRef } from 'react';
 
 // Define props interface
 interface NavbarProps {
@@ -11,8 +14,10 @@ interface NavbarProps {
 
 const Navbar = ({ user, handleLogOut, showAuthFlow }: NavbarProps = {}) => {
   // Component props received from Layout
-  
   const [isLoading, setIsLoading] = useState(true);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+  const mobileMenuRef = useRef<HTMLDivElement>(null);
   
   // Add a small delay to ensure the user state is properly loaded
   useEffect(() => {
@@ -21,6 +26,32 @@ const Navbar = ({ user, handleLogOut, showAuthFlow }: NavbarProps = {}) => {
     }, 500);
     
     return () => clearTimeout(timer);
+  }, []);
+  
+  // Handle scroll effect for navbar
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 10) {
+        setIsScrolled(true);
+      } else {
+        setIsScrolled(false);
+      }
+    };
+    
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+  
+  // Close mobile menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target as Node)) {
+        setIsMobileMenuOpen(false);
+      }
+    };
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
   
   const shortenAddress = (address: string | undefined | null) => {
@@ -58,77 +89,161 @@ const Navbar = ({ user, handleLogOut, showAuthFlow }: NavbarProps = {}) => {
   };
 
   return (
-    <nav className="bg-white shadow-md">
-      <div className="container mx-auto px-4 py-4">
+    <nav 
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled ? 'bg-white shadow-card py-3' : 'bg-white/80 backdrop-blur-lg py-4'}`}
+    >
+      <div className="container-custom">
         <div className="flex justify-between items-center">
+          {/* Logo and Desktop Navigation */}
           <div className="flex items-center">
-            <Link to="/" className="text-xl font-bold text-primary-600">
-              Web3 Message Signer
-            </Link>
-            <div className="ml-10 space-x-6 hidden md:flex">
-              <Link to="/" className="text-gray-700 hover:text-primary-600">
+            <Logo />
+            
+            {/* Desktop Navigation Links */}
+            <div className="ml-10 space-x-6 hidden lg:flex">
+              <Link to="/" className="text-dark-600 hover:text-primary-600 font-medium transition-colors">
                 Home
               </Link>
               {user && (
-                <Link to="/sign-message" className="text-gray-700 hover:text-primary-600">
+                <Link to="/sign-message" className="text-dark-600 hover:text-primary-600 font-medium transition-colors">
                   Sign Message
                 </Link>
               )}
             </div>
           </div>
-          <div>
+          
+          {/* Mobile Menu Button */}
+          <div className="lg:hidden">
+            <button 
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="p-2 rounded-lg text-dark-600 hover:bg-gray-100 transition-colors"
+              aria-label="Toggle mobile menu"
+            >
+              {isMobileMenuOpen ? (
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              )}
+            </button>
+          </div>
+          
+          {/* Auth Section */}
+          <div className="hidden lg:block">
             {isLoading ? (
-              <div className="w-32 h-8 bg-gray-200 animate-pulse rounded"></div>
+              <div className="w-32 h-10 flex items-center justify-center">
+                <LoadingSpinner size="sm" message="" />
+              </div>
             ) : user ? (
               <div className="flex items-center space-x-4">
-                <div className="flex flex-col items-end">
-                  <span className="text-sm font-medium text-gray-800">
-                    {shortenAddress(getWalletAddress())}
-                  </span>
-                  {user?.email && (
-                    <span className="text-xs text-gray-500">
-                      {user.email}
+                <div className="flex items-center space-x-3 px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl">
+                  <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center shadow-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                    </svg>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-sm font-medium text-dark-800">
+                      {shortenAddress(getWalletAddress())}
                     </span>
-                  )}
+                    {user?.email && (
+                      <span className="text-xs text-dark-500">
+                        {user.email}
+                      </span>
+                    )}
+                  </div>
                 </div>
-                <button
-                  onClick={() => {
-                    try {
-                      if (typeof handleLogOut === 'function') {
-                        handleLogOut();
-                      } else {
-                        console.error('handleLogOut is not a function');
-                      }
-                    } catch (error) {
-                      console.error('Error logging out:', error);
-                    }
-                  }}
-                  className="btn btn-secondary text-sm"
-                >
-                  Disconnect
-                </button>
+                <AuthButton
+                  user={user}
+                  handleLogOut={handleLogOut}
+                  size="sm"
+                />
               </div>
             ) : (
-              <button
-                onClick={() => {
-                  try {
-                    if (typeof showAuthFlow === 'function') {
-                      showAuthFlow();
-                    } else {
-                      alert('Authentication is currently unavailable.');
-                    }
-                  } catch (error) {
-                    alert('An error occurred while trying to connect.');
-                  }
-                }}
-                className="btn btn-primary"
-              >
-                Connect Wallet
-              </button>
+              <AuthButton
+                showAuthFlow={showAuthFlow}
+                user={user}
+              />
             )}
           </div>
         </div>
       </div>
+      
+      {/* Mobile Menu */}
+      {isMobileMenuOpen && (
+        <div 
+          ref={mobileMenuRef}
+          className="lg:hidden absolute top-full left-0 right-0 bg-white border-t border-gray-100 shadow-lg animate-fade-in"
+        >
+          <div className="container-custom py-4 space-y-4">
+            <div className="space-y-2">
+              <Link 
+                to="/" 
+                className="block px-4 py-2 text-dark-700 hover:bg-gray-50 rounded-lg transition-colors"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Home
+              </Link>
+              {user && (
+                <Link 
+                  to="/sign-message" 
+                  className="block px-4 py-2 text-dark-700 hover:bg-gray-50 rounded-lg transition-colors"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  Sign Message
+                </Link>
+              )}
+            </div>
+            
+            <div className="pt-2 border-t border-gray-100">
+              {user ? (
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-3 px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl">
+                    <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center shadow-sm">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                      </svg>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium text-dark-800">
+                        {shortenAddress(getWalletAddress())}
+                      </span>
+                      {user?.email && (
+                        <span className="text-xs text-dark-500">
+                          {user.email}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <AuthButton
+                    user={user}
+                    handleLogOut={() => {
+                      if (typeof handleLogOut === 'function') {
+                        handleLogOut();
+                        setIsMobileMenuOpen(false);
+                      }
+                    }}
+                    fullWidth={true}
+                  />
+                </div>
+              ) : (
+                <AuthButton
+                  showAuthFlow={() => {
+                    if (typeof showAuthFlow === 'function') {
+                      showAuthFlow();
+                      setIsMobileMenuOpen(false);
+                    }
+                  }}
+                  user={user}
+                  fullWidth={true}
+                />
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </nav>
   );
 };

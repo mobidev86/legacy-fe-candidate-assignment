@@ -183,12 +183,32 @@ export const useSafeDynamicContext = () => {
       
       // Ensure showAuthFlow is always a function
       if (typeof enhancedContext.showAuthFlow !== 'function') {
-        console.warn('showAuthFlow is not a function in the real context, providing a fallback');
-        // Use type assertion to avoid TypeScript errors
-        (enhancedContext as any).showAuthFlow = () => {
+        console.log('showAuthFlow is not a function in the real context, providing a fallback');
+        
+        // Define a proper fallback function
+        const fallbackShowAuthFlow = () => {
           console.log('Fallback showAuthFlow called');
+          
+          // Check if we can access the authentication flow through other means
+          if (enhancedContext && typeof (enhancedContext as any).openWallet === 'function') {
+            console.log('Using openWallet as fallback');
+            (enhancedContext as any).openWallet();
+            return;
+          }
+          
+          // Try to access the authentication modal through the window.dynamic object
+          if (window && (window as any).dynamic && typeof (window as any).dynamic.open === 'function') {
+            console.log('Using window.dynamic.open as fallback');
+            (window as any).dynamic.open();
+            return;
+          }
+          
+          // If all else fails, show an alert
           alert('Authentication flow is not available. Please try again later.');
         };
+        
+        // Assign the fallback function to the enhanced context using type assertion
+        (enhancedContext as any).showAuthFlow = fallbackShowAuthFlow;
       }
       
       return enhancedContext;
