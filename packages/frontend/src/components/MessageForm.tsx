@@ -115,12 +115,24 @@ const MessageForm = ({ addToHistory, user, primaryWallet, addMessageToHistory }:
       // Use try-catch for the actual signing operation
       let signature;
       try {
-        signature = await primaryWallet.signMessage({ message });
+        // Ensure message is a valid string and trim it
+        const messageToSign = String(message).trim();
+        
+        if (!messageToSign) {
+          throw new Error('Message cannot be empty');
+        }
+        
+        console.log('Signing message:', messageToSign);
+        
+        // Sign the message - Dynamic SDK expects just the string, not an object
+        signature = await primaryWallet.signMessage(messageToSign);
         
         // Verify that signature is a valid string
         if (!signature || typeof signature !== 'string') {
           throw new Error('Invalid signature format returned from wallet');
         }
+        
+        console.log('Signature received:', signature);
       } catch (signError) {
         console.error('Error during message signing:', signError);
         throw new Error(signError instanceof Error ? signError.message : 'Failed to sign message with wallet');
